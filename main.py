@@ -32,21 +32,39 @@ def check_syntax(data):
     else:
         return 1
 
-def get_heder_code(heder, index):
+def get_heder_code(heder, num):
     i = 0
-    count = 0
-    data = heder[index]
-    if check_syntax(data) == 1:
-        sys.exit("Syntax Error !")
-    fields = data.split('|')
-    return int(fields[2])
+    while i < len(heder):
+        if check_syntax(heder[i]) == 1:
+            print("Syntax Error expected '|'")
+        line = heder[i].split('|')
+        if int(line[1]) == num:
+            return line[2]
+        i += 1
+    return -1
 
-def get_str(heder, index):
-    data = heder[index]
-    if check_syntax(data) == 1:
-        sys.exit("Syntax Error !")
-    fields = data.split('|')
-    return fields[2]
+def get_str(heder, num):
+    i = 0
+    while i < len(heder):
+        if check_syntax(heder[i]) == 1:
+            print("Syntax Error expected '|'")
+        line = heder[i].split('|')
+        if int(line[1]) == num:
+            return line[2]
+        i += 1
+    return "Null"
+
+def get_first_elem(file_content):
+    i = 0
+    lien = file_content[0].split('|')
+    while (int(line[2]) != 15)
+        i += 1
+        lien = file_content[i].split('|')
+    return i
+
+def get_by_index(line, index):
+    line_split = line.split('|')
+    return (line_split[index])
 
 def main():
     output_directory = 'output_files/'
@@ -75,27 +93,39 @@ def main():
     while i < len(file_names):
         file_names[i] = output_directory + file_names[i]
         heder = read_lines(file_names[i], 27)
-        heder_code = get_heder_code(heder, 0)
-        print("heder_code = " + str(heder_code))
-        la_long = get_str(heder, 1)
-        print("la long = " + la_long)
-        description_court = get_str(heder, 2)
-        print("discription court = " + description_court)
-        code_formule_gestion = get_heder_code(heder, 5)
-        print("code_formule_gestion = " + str(code_formule_gestion))
-        description_long = get_str(heder, 6)
-        print("description_long = " + description_long)
-        date_service = get_str(heder, 12)
-        print("date_service = " + date_service)
-        version_formule_1 = get_heder_code(heder, 13)
-        version_formule_2 = get_heder_code(heder, 14)
-        print("version_formule_1 = " + str(version_formule_1))
-        print("version_formule_2 = " + str(version_formule_2))
-        ref_1 = get_heder_code(heder, 17)
-        ref_2 = get_heder_code(heder, 18)
-        print("ref_1 = " + str(ref_1))
-        print("ref_2 = " + str(ref_2))
-        print("--------------------------------------")
+        heder_code = get_heder_code(heder, 1)
+        la_long = get_str(heder, 2)
+        description_court = get_str(heder, 3)
+        code_formule_gestion = get_heder_code(heder, 6)
+        description_long = get_str(heder, 7)
+        date_service = get_str(heder, 11)
+        version_formule_1 = get_heder_code(heder, 12)
+        version_formule_2 = get_heder_code(heder, 13)
+        ref_1 = get_heder_code(heder, 31)
+        ref_2 = get_heder_code(heder, 22)
+        num_of_element = get_heder_code(file_names[i], 18)
+        data_template ={
+            "COMP": None,
+            "COGESTION": None,
+            "COUSINE": None,
+            "CODOSAGE": None,
+            "NUMORDRE": None,
+            "LIBMP": None,
+            "PCT": None
+        }
+        data_loop = 0
+        first_elem = get_first_elem(file_names[i])
+        data_list[]
+        while data_loop < num_of_element:
+            data_list.append({
+                "COMP": get_by_index(file_names[i][first_elem], 2),
+                "COGESTION": get_by_index(file_names[i][first_elem], 3),
+                "COUSINE": get_by_index(file_names[i][first_elem], 4),
+                "CODOSAGE": get_by_index(file_names[i][first_elem], 5),
+                "NUMORDRE": get_by_index(file_names[i][first_elem], 6),
+                "LIBMP": get_by_index(file_names[i][first_elem], 7),
+                "PCT": get_by_index(file_names[i][first_elem], 8)
+            })
         i += 1
 
 if __name__ == "__main__":
