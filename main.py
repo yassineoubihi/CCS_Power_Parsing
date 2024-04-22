@@ -87,8 +87,15 @@ def main():
         print("description_long = " + description_long)
         date_service = get_str(heder, 12)
         print("date_service = " + date_service)
+        version_formule_1 = get_heder_code(heder, 13)
+        version_formule_2 = get_heder_code(heder, 14)
+        print("version_formule_1 = " + str(version_formule_1))
+        print("version_formule_2 = " + str(version_formule_2))
+        ref_1 = get_heder_code(heder, 17)
+        ref_2 = get_heder_code(heder, 18)
+        print("ref_1 = " + str(ref_1))
+        print("ref_2 = " + str(ref_2))
         print("--------------------------------------")
-        #version_formule_1 = get_heder_code()
         i += 1
 
 if __name__ == "__main__":
