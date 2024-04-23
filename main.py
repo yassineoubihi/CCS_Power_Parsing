@@ -2,7 +2,6 @@ import sqlite3
 import sys
 import os
 
-
 def read_lines(input_path):
     i = 0
     heder = []
@@ -29,7 +28,7 @@ def check_syntax(data):
     while i < len(data):
         if data[i] == '|':
             count += 1
-        i+= 1
+        i += 1
     if count == 2:
         return 0
     else:
@@ -42,7 +41,7 @@ def get_heder_code(heder, num):
             print("Syntax Error expected '|'")
         line = heder[i].split('|')
         if int(line[1]) == num:
-            return line[2]
+            return line[2].strip()
         i += 1
     return -1
 
@@ -53,7 +52,7 @@ def get_str(heder, num):
             print("Syntax Error expected '|'")
         line = heder[i].split('|')
         if int(line[1]) == num:
-            return line[2]
+            return line[2].strip()
         i += 1
     return "Null"
 
@@ -68,7 +67,7 @@ def get_by_index(line, index):
     line_split = line.split('|')
     return (line_split[index])
 
-def get_data_start(file,num):
+def get_data_start(file, num):
     i = 0
     line_split = file[i].split('|')
     while int(line_split[1]) != num:
@@ -77,7 +76,7 @@ def get_data_start(file,num):
     return int(i)
 
 def get_data_index(line, index):
-    return line[index]
+    return line[index].strip()
 
 def main():
     output_directory = 'output_files/'
@@ -116,8 +115,9 @@ def main():
         ref_1 = get_heder_code(heder, 31)
         ref_2 = get_heder_code(heder, 22)
         c = 0
+        heder_id = i
         while int(heder[c].split('|')[1]) != 15:
-                c += 1
+            c += 1
         while c < len(heder) and int(heder[c].split('|')[1]) != 16:
             comp = get_data_index(heder[c].split('|'), 2)
             cogestion = get_data_index(heder[c].split('|'), 3)
@@ -127,6 +127,58 @@ def main():
             libmp = get_data_index(heder[c].split('|'), 7)
             pct = get_data_index(heder[c].split('|'), 8)
             c += 1
+        sql_commands = """
+        -- Create the database (if your DBMS supports this syntax)
+        CREATE DATABASE IF NOT EXISTS mydata;
+
+        USE mydata;
+
+        -- Create the heder table
+        CREATE TABLE IF NOT EXISTS heder (
+            heder_id INT AUTO_INCREMENT PRIMARY KEY,
+            la_long VARCHAR(255) NOT NULL,
+            description_court VARCHAR(255) NOT NULL,
+            code_formule_gestion VARCHAR(255) NOT NULL,
+            description_long VARCHAR(255) NOT NULL,
+            date_service VARCHAR(255) NOT NULL,
+            version_formule_1 VARCHAR(255) NOT NULL,
+            version_formule_2 VARCHAR(255) NOT NULL,
+            ref_1 VARCHAR(255) NOT NULL,
+            ref_2 VARCHAR(255) NOT NULL
+        );
+
+        -- Insert data into heder
+        INSERT INTO heder (
+            la_long, description_court, code_formule_gestion, 
+            description_long, date_service, version_formule_1, 
+            version_formule_2, ref_1, ref_2
+        ) VALUES ('{}', '{}', '{}',
+                '{}', '{}', '{}',
+                '{}','{}', '{}');
+
+        -- Create the details table
+        CREATE TABLE IF NOT EXISTS details (
+            heder_id INTEGER,
+            heder_code VARCHAR(255),
+            comp VARCHAR(255),
+            cogestion VARCHAR(255),
+            cousine VARCHAR(255),
+            codage VARCHAR(255),
+            num_order VARCHAR(255),
+            libmp VARCHAR(255),
+            pct VARCHAR(255),
+            FOREIGN KEY (heder_id) REFERENCES heder(heder_id)
+        );
+
+        -- Insert data into details
+        INSERT INTO details (
+            heder_code,comp, cogestion, cousine, codage, num_order, libmp, pct
+        ) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');
+        """.format(la_long, description_court, code_formule_gestion,
+                description_long, date_service, version_formule_1,
+                version_formule_2, ref_1, ref_2, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct)
+        with open("database_setup_" + str(i + 1) + ".sql", "w") as file:
+            file.write(sql_commands)
         i += 1
         c = 0
 
