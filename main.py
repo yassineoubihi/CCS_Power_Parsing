@@ -1,6 +1,11 @@
 import sqlite3
 import sys
 import os
+import tkinter as tk
+from tkinter import filedialog, font as tkfont
+
+global input_path
+input_path = None
 
 def read_lines(input_path):
     i = 0
@@ -78,9 +83,58 @@ def get_data_start(file, num):
 def get_data_index(line, index):
     return line[index].strip()
 
-def main():
+
+def select_file(path_label, root):
+    global input_path
+    input_path = filedialog.askopenfilename()  # Open the file dialog
+    if input_path:
+        path_label.config(text=f"File selected: {input_path}")
+        root.quit()  # Close the GUI after file selection
+    else:
+        path_label.config(text="No file selected.")
+
+def process_file(input_path):
+    # Define 'output_directory' where you intend to use it
     output_directory = 'output_files/'
-    input_path = input("Enter the file Path : ")
+    if not os.path.exists(input_path):
+        raise FileNotFoundError(f"The file {input_path} does not exist.")
+    if not os.access(input_path, os.R_OK):
+        raise PermissionError(f"The file {input_path} is not readable.")
+
+    os.makedirs(output_directory, exist_ok=True)
+    # Further processing here...
+    print(f"Processing file: {input_path}")
+
+def main():
+    global output_directory
+    output_directory = 'output_files/'
+    root = tk.Tk()
+    root.geometry("800x500")
+    root.title("CCS Power Parsing")
+    root.configure(bg='#aaccb8')
+
+    label_font = tkfont.Font(family='Helvetica', size=12, weight='bold')
+    button_font = tkfont.Font(family='Helvetica', size=12)
+
+    heading_label = tk.Label(root, text="File Selection Tool", font=label_font, bg='#f0f0f0', fg='#333')
+    heading_label.pack(pady=(20, 10))
+
+    
+
+    path_label = tk.Label(root, text="No file selected.", font=label_font, bg='#f0f0f0', fg='blue')
+    path_label.pack(pady=(10, 20))
+
+    select_file_button = tk.Button(root, text="Select File", command=lambda: select_file(path_label, root), font=button_font)
+    select_file_button.pack(pady=20, ipadx=10, ipady=5)
+
+    exit_button = tk.Button(root, text="Exit", command=root.quit, font=button_font)
+    exit_button.pack(pady=(10, 20), ipadx=10, ipady=5)
+
+    root.mainloop()
+    if input_path:
+        process_file(input_path)
+    else:
+        print("No file selected or process canceled.")
     i = 0
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"The file {input_path} does not exist.")
