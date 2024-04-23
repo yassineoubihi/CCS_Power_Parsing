@@ -68,6 +68,17 @@ def get_by_index(line, index):
     line_split = line.split('|')
     return (line_split[index])
 
+def get_data_start(file,num):
+    i = 0
+    line_split = file[i].split('|')
+    while int(line_split[1]) != num:
+        i += 1
+        line_split = file[i].split('|')
+    return int(i)
+
+def get_data_index(line, index):
+    return line[index]
+
 def main():
     output_directory = 'output_files/'
     input_path = input("Enter the file Path : ")
@@ -91,7 +102,6 @@ def main():
     for handle in file_handles.values():
         handle.close()
     file_names = [f for f in os.listdir(output_directory) if os.path.isfile(os.path.join(output_directory, f))]
-    print(file_names)
     while i < len(file_names):
         file_names[i] = output_directory + file_names[i]
         heder = read_lines(file_names[i])
@@ -100,35 +110,25 @@ def main():
         description_court = get_str(heder, 3)
         code_formule_gestion = get_heder_code(heder, 6)
         description_long = get_str(heder, 7)
-        print("i am here")
         date_service = get_str(heder, 11)
         version_formule_1 = get_heder_code(heder, 12)
         version_formule_2 = get_heder_code(heder, 13)
         ref_1 = get_heder_code(heder, 31)
         ref_2 = get_heder_code(heder, 22)
-        num_of_element = get_heder_code(heder, 18)
-        data_loop = 0
-        first_elem = get_first_elem(heder)
         c = 0
-        """
-        while data_loop < num_of_element:
-            comp = get_by_index(file_names[i][first_elem], 2)
-            cogestion = get_by_index(file_names[i][first_elem], 3)
-            cousine = get_by_index(file_names[i][first_elem], 4)
-            codage = get_by_index(file_names[i][first_elem], 5)
-            num_order = get_by_index(file_names[i][first_elem], 6)
-            libmp = get_by_index(file_names[i][first_elem], 7)
-            pct = get_by_index(file_names[i][first_elem], 8)
-            print("comp = " + comp)
-            print("cogestion = " + cogestion)
-            print("cousine = " + cousine)
-            print("codage = " + codage)
-            print("num_order = " + num_order)
-            print("libmp = " + libmp)
-            print("pct = " + pct)
-            data_loop += 1
-            """
+        while int(heder[c].split('|')[1]) != 15:
+                c += 1
+        while c < len(heder) and int(heder[c].split('|')[1]) != 16:
+            comp = get_data_index(heder[c].split('|'), 2)
+            cogestion = get_data_index(heder[c].split('|'), 3)
+            cousine = get_data_index(heder[c].split('|'), 4)
+            codage = get_data_index(heder[c].split('|'), 5)
+            num_order = get_data_index(heder[c].split('|'), 6)
+            libmp = get_data_index(heder[c].split('|'), 7)
+            pct = get_data_index(heder[c].split('|'), 8)
+            c += 1
         i += 1
+        c = 0
 
 if __name__ == "__main__":
     main()
