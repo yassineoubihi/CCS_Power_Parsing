@@ -3,16 +3,19 @@ import sys
 import os
 
 
-def read_lines(input_path, num_of_lines):
+def read_lines(input_path):
     i = 0
     heder = []
     try:
         with open(input_path, 'r') as file:
-            while i < num_of_lines:
-                line = file.readline()
+            line = file.readline()
+            split_line = line.split('|')
+            while int(split_line[1]) != 16:
                 if line == '':
                     break
                 heder.append(line.strip())
+                line = file.readline()
+                split_line = line.split('|')
                 i += 1
     except FileNotFoundError:
         print(f"The file at {input_path} could not be found.")
@@ -56,10 +59,9 @@ def get_str(heder, num):
 
 def get_first_elem(file_content):
     i = 0
-    lien = file_content[0].split('|')
-    while (int(line[2]) != 15)
+    line_split = file_content[i].split('|')
+    while int(line_split[1]) != 15:
         i += 1
-        lien = file_content[i].split('|')
     return i
 
 def get_by_index(line, index):
@@ -92,40 +94,40 @@ def main():
     print(file_names)
     while i < len(file_names):
         file_names[i] = output_directory + file_names[i]
-        heder = read_lines(file_names[i], 27)
+        heder = read_lines(file_names[i])
         heder_code = get_heder_code(heder, 1)
         la_long = get_str(heder, 2)
         description_court = get_str(heder, 3)
         code_formule_gestion = get_heder_code(heder, 6)
         description_long = get_str(heder, 7)
+        print("i am here")
         date_service = get_str(heder, 11)
         version_formule_1 = get_heder_code(heder, 12)
         version_formule_2 = get_heder_code(heder, 13)
         ref_1 = get_heder_code(heder, 31)
         ref_2 = get_heder_code(heder, 22)
-        num_of_element = get_heder_code(file_names[i], 18)
-        data_template ={
-            "COMP": None,
-            "COGESTION": None,
-            "COUSINE": None,
-            "CODOSAGE": None,
-            "NUMORDRE": None,
-            "LIBMP": None,
-            "PCT": None
-        }
+        num_of_element = get_heder_code(heder, 18)
         data_loop = 0
-        first_elem = get_first_elem(file_names[i])
-        data_list[]
+        first_elem = get_first_elem(heder)
+        c = 0
+        """
         while data_loop < num_of_element:
-            data_list.append({
-                "COMP": get_by_index(file_names[i][first_elem], 2),
-                "COGESTION": get_by_index(file_names[i][first_elem], 3),
-                "COUSINE": get_by_index(file_names[i][first_elem], 4),
-                "CODOSAGE": get_by_index(file_names[i][first_elem], 5),
-                "NUMORDRE": get_by_index(file_names[i][first_elem], 6),
-                "LIBMP": get_by_index(file_names[i][first_elem], 7),
-                "PCT": get_by_index(file_names[i][first_elem], 8)
-            })
+            comp = get_by_index(file_names[i][first_elem], 2)
+            cogestion = get_by_index(file_names[i][first_elem], 3)
+            cousine = get_by_index(file_names[i][first_elem], 4)
+            codage = get_by_index(file_names[i][first_elem], 5)
+            num_order = get_by_index(file_names[i][first_elem], 6)
+            libmp = get_by_index(file_names[i][first_elem], 7)
+            pct = get_by_index(file_names[i][first_elem], 8)
+            print("comp = " + comp)
+            print("cogestion = " + cogestion)
+            print("cousine = " + cousine)
+            print("codage = " + codage)
+            print("num_order = " + num_order)
+            print("libmp = " + libmp)
+            print("pct = " + pct)
+            data_loop += 1
+            """
         i += 1
 
 if __name__ == "__main__":
