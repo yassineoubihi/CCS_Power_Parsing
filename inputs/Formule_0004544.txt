@@ -1,4 +1,4 @@
-95173          |0195173
+95173          |01|95173
 95173          |02|GB
 95173          |03|BROILER PRESTARTER RS (0 - 8 days) TRIAL
 95173          |04|MEADERS
