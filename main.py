@@ -1,5 +1,6 @@
 import sys
 import os
+import psycopg2
 import tkinter as tk
 from tkinter import messagebox, font as tkfont
 import threading
@@ -10,6 +11,7 @@ import smtplib
 from email.message import EmailMessage
 import ssl
 import smtplib
+from customtkinter import *
 
 
 global input_path
@@ -135,7 +137,51 @@ def process_file(input_path):
     # Further processing here...
     print(f"Processing file: {input_path}")
 
+def get_data_codage(header, index):
+    if (len(header.split('|')[index].strip()) == 0):
+        return 0
+    else:
+        return header.split('|')[index].strip()
+
+def create_header_table(cursor, conn):
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS header (
+            id SERIAL PRIMARY KEY,
+            la_long VARCHAR(255) NOT NULL,
+            description_court VARCHAR(255) NOT NULL,
+            code_formule_gestion INT NOT NULL,
+            description_long VARCHAR(255) NOT NULL,
+            date_service VARCHAR(255) NOT NULL,
+            version_formule_1 INT NOT NULL,
+            version_formule_2 INT NOT NULL,
+            ref_1 INT NOT NULL,
+            ref_2 INT NOT NULL
+        );
+    """)
+    conn.commit()
+
+def create_footer_table(cursor, conn):
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS table_data (
+            id SERIAL PRIMARY KEY,
+            header_id INTEGER NOT NULL,
+            heder_code INT NOT NULL,
+            comp INT NOT NULL,
+            cogestion INT NOT NULL,
+            cousine VARCHAR(255),
+            codage INT NOT NULL,
+            num_order INT NOT NULL,
+            libmp VARCHAR(255),
+            pct REAL,
+            FOREIGN KEY (header_id) REFERENCES header(id)
+        );
+    """)
+    conn.commit()
+
 def recurring_task(interval):
+    conn = psycopg2.connect(host = "localhost", dbname="postgres",user="postgres",password="root",port=5432)
+    curr = conn.cursor()
+
     while True:
         os.makedirs(output_directory, exist_ok=True)
         directory = 'inputs/'
@@ -170,14 +216,23 @@ def recurring_task(interval):
                     heder_code = get_heder_code(heder, 1,current_working_file,ko_path)
                     la_long = get_str(heder, 2)
                     description_court = get_str(heder, 3)
-                    code_formule_gestion = get_heder_code(heder, 6)
+                    code_formule_gestion = get_heder_code(heder, 6, current_working_file,ko_path)
                     description_long = get_str(heder, 7)
                     date_service = get_str(heder, 11)
-                    version_formule_1 = get_heder_code(heder, 12)
-                    version_formule_2 = get_heder_code(heder, 13)
-                    ref_1 = get_heder_code(heder, 31)
-                    ref_2 = get_heder_code(heder, 22)
+                    version_formule_1 = get_heder_code(heder, 12,current_working_file,ko_path)
+                    version_formule_2 = get_heder_code(heder, 13,current_working_file,ko_path)
+                    ref_1 = get_heder_code(heder, 31,current_working_file,ko_path)
+                    ref_2 = get_heder_code(heder, 22,current_working_file,ko_path)
                     c = 0
+                    create_header_table(curr,conn)
+                    curr.execute("""
+                        INSERT INTO header (
+                        la_long, description_court, code_formule_gestion, description_long,
+                        date_service, version_formule_1, version_formule_2, ref_1, ref_2
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                        """, (la_long, description_court, code_formule_gestion, description_long, 
+                        date_service, version_formule_1, version_formule_2, ref_1, ref_2))
+                    header_id = curr.fetchone()[0]
                     heder_id = i
                     while int(heder[c].split('|')[1]) != 15:
                         c += 1
@@ -185,69 +240,27 @@ def recurring_task(interval):
                         comp = get_data_index(heder[c].split('|'), 2)
                         cogestion = get_data_index(heder[c].split('|'), 3)
                         cousine = get_data_index(heder[c].split('|'), 4)
-                        codage = get_data_index(heder[c].split('|'), 5)
+                        codage = get_data_codage(heder[c], 5)
                         num_order = get_data_index(heder[c].split('|'), 6)
                         libmp = get_data_index(heder[c].split('|'), 7)
                         pct = get_data_index(heder[c].split('|'), 8)
+                        create_footer_table(curr, conn)
+                        curr.execute("""
+                        INSERT INTO table_data (
+                        header_id, heder_code, comp, cogestion, cousine, codage, 
+                        num_order, libmp, pct
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+                        """, (header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct))
                         c += 1
-                    sql_commands = """
-                    -- Create the database (if your DBMS supports this syntax)
-                    CREATE DATABASE IF NOT EXISTS mydata;
-    
-                    USE mydata;
-    
-                    -- Create the heder table
-                    CREATE TABLE IF NOT EXISTS heder (
-                        heder_id INT AUTO_INCREMENT PRIMARY KEY,
-                        la_long VARCHAR(255) NOT NULL,
-                        description_court VARCHAR(255) NOT NULL,
-                        code_formule_gestion VARCHAR(255) NOT NULL,
-                        description_long VARCHAR(255) NOT NULL,
-                        date_service VARCHAR(255) NOT NULL,
-                        version_formule_1 VARCHAR(255) NOT NULL,
-                        version_formule_2 VARCHAR(255) NOT NULL,
-                        ref_1 VARCHAR(255) NOT NULL,
-                        ref_2 VARCHAR(255) NOT NULL
-                    );
-    
-                    -- Insert data into heder
-                    INSERT INTO heder (
-                        la_long, description_court, code_formule_gestion, 
-                        description_long, date_service, version_formule_1, 
-                        version_formule_2, ref_1, ref_2
-                    ) VALUES ('{}', '{}', '{}',
-                            '{}', '{}', '{}',
-                            '{}','{}', '{}');
-    
-                    -- Create the details table
-                    CREATE TABLE IF NOT EXISTS details (
-                        heder_id INTEGER,
-                        heder_code VARCHAR(255),
-                        comp VARCHAR(255),
-                        cogestion VARCHAR(255),
-                        cousine VARCHAR(255),
-                        codage VARCHAR(255),
-                        num_order VARCHAR(255),
-                        libmp VARCHAR(255),
-                        pct VARCHAR(255),
-                        FOREIGN KEY (heder_id) REFERENCES heder(heder_id)
-                    );
-    
-                    -- Insert data into details
-                    INSERT INTO details (
-                        heder_code,comp, cogestion, cousine, codage, num_order, libmp, pct
-                    ) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');
-                    """.format(la_long, description_court, code_formule_gestion,
-                            description_long, date_service, version_formule_1,
-                            version_formule_2, ref_1, ref_2, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct)
-                    with open("database_setup_" + str(i + 1) + ".sql", "w") as file:
-                        file.write(sql_commands)
+                    conn.commit()
                     move_file_to = os.path.join(ok_path, os.path.basename(current_working_file))
                     if os.path.isfile(current_working_file):
                         shutil.move(current_working_file, move_file_to)
                     i += 1
                     c = 0
                 number_of_files += 1
+                curr.close()
+                conn.close()
         time.sleep(interval * 60)
 
 def button_command(count_down):
