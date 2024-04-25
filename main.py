@@ -1,4 +1,3 @@
-import sqlite3
 import sys
 import os
 import tkinter as tk
@@ -7,6 +6,11 @@ import threading
 import shutil
 import time
 from tkinter import filedialog, font as tkfont
+import smtplib
+from email.message import EmailMessage
+import ssl
+import smtplib
+
 
 global input_path
 input_path = None
@@ -43,11 +47,33 @@ def check_syntax(data):
     else:
         return 1
 
-def get_heder_code(heder, num):
+def get_heder_code(heder, num, current_working_file, ko_path):
     i = 0
     while i < len(heder):
         if check_syntax(heder[i]) == 1:
-            print("Syntax Error expected '|'")
+            move_file_to = os.path.join(ko_path, os.path.basename(current_working_file))
+            if os.path.isfile(current_working_file):
+                shutil.move(current_working_file, move_file_to)
+            messagebox.showinfo("Syntax Error !" ,"Syntax Error expected '|' in file : " + current_working_file)
+            email_sender = 'youbihi129@gmail.com'
+            email_password = "falk seer ivkx eolv"
+
+            email_receiver = 'youbihi741@gmail.com'
+            msg_subject = 'Syntax Error !'
+            body = "Syntax Error expected '|' in file : " + current_working_file
+
+            em = EmailMessage()
+            em['From'] = email_sender
+            em['To'] = email_receiver
+            em['subject'] = msg_subject
+            em.set_content(body)
+
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465, context = context) as smtp:
+                smtp.login(email_sender, email_password)
+                smtp.sendmail(email_sender, email_receiver, em.as_string())
+
+            sys.exit(1)
         line = heder[i].split('|')
         if int(line[1]) == num:
             return line[2].strip()
@@ -114,8 +140,9 @@ def recurring_task(interval):
         os.makedirs(output_directory, exist_ok=True)
         directory = 'inputs/'
         files = os.listdir(directory)
-        print(files)
-        if len(files) > 0:
+        if not files:
+            messagebox.showinfo("Empty Folder", "Folder is empty")
+        else :
             file_handles = {}
             ok_path = "OK/"
             ko_path = "KO/"
@@ -126,6 +153,7 @@ def recurring_task(interval):
             number_of_files = 0
             while number_of_files < len(files):
                 file_name = files[number_of_files]
+                current_working_file = "inputs/" + file_name
                 with open("inputs/" + file_name, 'r') as input_file:
                     for line in input_file:
                         number = line.split()[0]
@@ -139,7 +167,7 @@ def recurring_task(interval):
                 while i < len(file_names):
                     file_names[i] = output_directory + file_names[i]
                     heder = read_lines(file_names[i])
-                    heder_code = get_heder_code(heder, 1)
+                    heder_code = get_heder_code(heder, 1,current_working_file,ko_path)
                     la_long = get_str(heder, 2)
                     description_court = get_str(heder, 3)
                     code_formule_gestion = get_heder_code(heder, 6)
@@ -162,7 +190,6 @@ def recurring_task(interval):
                         libmp = get_data_index(heder[c].split('|'), 7)
                         pct = get_data_index(heder[c].split('|'), 8)
                         c += 1
-                    shutil.move(directory + file_name, str(ok_path) + str(file_name))
                     sql_commands = """
                     -- Create the database (if your DBMS supports this syntax)
                     CREATE DATABASE IF NOT EXISTS mydata;
@@ -215,12 +242,12 @@ def recurring_task(interval):
                             version_formule_2, ref_1, ref_2, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct)
                     with open("database_setup_" + str(i + 1) + ".sql", "w") as file:
                         file.write(sql_commands)
-                    print("here")
+                    move_file_to = os.path.join(ok_path, os.path.basename(current_working_file))
+                    if os.path.isfile(current_working_file):
+                        shutil.move(current_working_file, move_file_to)
                     i += 1
                     c = 0
                 number_of_files += 1
-        else :
-            messagebox.showinfo("Empty Folder", "Folder is empty")
         time.sleep(interval * 60)
 
 def button_command(count_down):
