@@ -1,2 +1,2 @@
 # CCS_Power_Parsing
-A python script to parse and analyze data and store it in a sql database using tkinter for the gui
+A python script to parse and analyze data and store it in a sql database

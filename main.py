@@ -11,11 +11,30 @@ import smtplib
 from email.message import EmailMessage
 import ssl
 import smtplib
-from customtkinter import *
+import customtkinter as ctk
+from tkinter import filedialog
 
 
 global input_path
 input_path = None
+
+def check_db_connection():
+    try:
+        conn = psycopg2.connect(host="localhost", dbname="postgres", user="postgres", password="root", port=5432)
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        conn.close()
+        return True
+    except psycopg2.OperationalError:
+        return False
+
+def update_db_status(label):
+    while True:
+        if check_db_connection():
+            label.configure(text="Database ON", text_color='green')
+        else:
+            label.configure(text="Database OFF", text_color='red')
+        time.sleep(60)  # Update every 60 seconds
 
 def read_lines(input_path):
     i = 0
@@ -74,7 +93,6 @@ def get_heder_code(heder, num, current_working_file, ko_path):
             with smtplib.SMTP_SSL('smtp.gmail.com', 465, context = context) as smtp:
                 smtp.login(email_sender, email_password)
                 smtp.sendmail(email_sender, email_receiver, em.as_string())
-
             sys.exit(1)
         line = heder[i].split('|')
         if int(line[1]) == num:
@@ -118,15 +136,14 @@ def get_data_index(line, index):
 
 def select_file(path_label, root):
     global input_path
-    input_path = filedialog.askopenfilename()  # Open the file dialog
+    input_path = filedialog.askopenfilename()
     if input_path:
         path_label.config(text=f"File selected: {input_path}")
-        root.quit()  # Close the GUI after file selection
+        root.quit()
     else:
         path_label.config(text="No file selected.")
 
 def process_file(input_path):
-    # Define 'output_directory' where you intend to use it
     output_directory = 'output_files/'
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"The file {input_path} does not exist.")
@@ -134,8 +151,6 @@ def process_file(input_path):
         raise PermissionError(f"The file {input_path} is not readable.")
 
     os.makedirs(output_directory, exist_ok=True)
-    # Further processing here...
-    print(f"Processing file: {input_path}")
 
 def get_data_codage(header, index):
     if (len(header.split('|')[index].strip()) == 0):
@@ -186,81 +201,72 @@ def recurring_task(interval):
         os.makedirs(output_directory, exist_ok=True)
         directory = 'inputs/'
         files = os.listdir(directory)
-        if not files:
-            messagebox.showinfo("Empty Folder", "Folder is empty")
-        else :
-            file_handles = {}
-            ok_path = "OK/"
-            ko_path = "KO/"
-            if not os.path.exists(ok_path):
-                os.makedirs(ok_path)
-            if not os.path.exists(ko_path):
-                os.makedirs(ko_path)
-            number_of_files = 0
-            while number_of_files < len(files):
-                file_name = files[number_of_files]
-                current_working_file = "inputs/" + file_name
-                with open("inputs/" + file_name, 'r') as input_file:
-                    for line in input_file:
-                        number = line.split()[0]
-                        if number not in file_handles:
-                            file_handles[number] = open(os.path.join(output_directory, f"{number}.txt"), 'w')
-                        file_handles[number].write(line)
-                for handle in file_handles.values():
-                    handle.close()
-                file_names = [f for f in os.listdir(output_directory) if os.path.isfile(os.path.join(output_directory, f))]
-                i = 0
-                while i < len(file_names):
-                    file_names[i] = output_directory + file_names[i]
-                    heder = read_lines(file_names[i])
-                    heder_code = get_heder_code(heder, 1,current_working_file,ko_path)
-                    la_long = get_str(heder, 2)
-                    description_court = get_str(heder, 3)
-                    code_formule_gestion = get_heder_code(heder, 6, current_working_file,ko_path)
-                    description_long = get_str(heder, 7)
-                    date_service = get_str(heder, 11)
-                    version_formule_1 = get_heder_code(heder, 12,current_working_file,ko_path)
-                    version_formule_2 = get_heder_code(heder, 13,current_working_file,ko_path)
-                    ref_1 = get_heder_code(heder, 31,current_working_file,ko_path)
-                    ref_2 = get_heder_code(heder, 22,current_working_file,ko_path)
-                    c = 0
-                    create_header_table(curr,conn)
+        file_handles = {}
+        number_of_files = 0
+        while number_of_files < len(files):
+            file_name = files[number_of_files]
+            current_working_file = "inputs/" + file_name
+            with open("inputs/" + file_name, 'r') as input_file:
+                for line in input_file:
+                    number = line.split()[0]
+                    if number not in file_handles:
+                        file_handles[number] = open(os.path.join(output_directory, f"{number}.txt"), 'w')
+                    file_handles[number].write(line)
+            for handle in file_handles.values():
+                handle.close()
+            file_names = [f for f in os.listdir(output_directory) if os.path.isfile(os.path.join(output_directory, f))]
+            i = 0
+            while i < len(file_names):
+                file_names[i] = output_directory + file_names[i]
+                heder = read_lines(file_names[i])
+                heder_code = get_heder_code(heder, 1,current_working_file,ko_path)
+                la_long = get_str(heder, 2)
+                description_court = get_str(heder, 3)
+                code_formule_gestion = get_heder_code(heder, 6, current_working_file,ko_path)
+                description_long = get_str(heder, 7)
+                date_service = get_str(heder, 11)
+                version_formule_1 = get_heder_code(heder, 12,current_working_file,ko_path)
+                version_formule_2 = get_heder_code(heder, 13,current_working_file,ko_path)
+                ref_1 = get_heder_code(heder, 31,current_working_file,ko_path)
+                ref_2 = get_heder_code(heder, 22,current_working_file,ko_path)
+                c = 0
+                create_header_table(curr,conn)
+                curr.execute("""
+                    INSERT INTO header (
+                    la_long, description_court, code_formule_gestion, description_long,
+                    date_service, version_formule_1, version_formule_2, ref_1, ref_2
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                    """, (la_long, description_court, code_formule_gestion, description_long, 
+                    date_service, version_formule_1, version_formule_2, ref_1, ref_2))
+                header_id = curr.fetchone()[0]
+                heder_id = i
+                while int(heder[c].split('|')[1]) != 15:
+                    c += 1
+                while c < len(heder) and int(heder[c].split('|')[1]) != 16:
+                    comp = get_data_index(heder[c].split('|'), 2)
+                    cogestion = get_data_index(heder[c].split('|'), 3)
+                    cousine = get_data_index(heder[c].split('|'), 4)
+                    codage = get_data_codage(heder[c], 5)
+                    num_order = get_data_index(heder[c].split('|'), 6)
+                    libmp = get_data_index(heder[c].split('|'), 7)
+                    pct = get_data_index(heder[c].split('|'), 8)
+                    create_footer_table(curr, conn)
                     curr.execute("""
-                        INSERT INTO header (
-                        la_long, description_court, code_formule_gestion, description_long,
-                        date_service, version_formule_1, version_formule_2, ref_1, ref_2
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
-                        """, (la_long, description_court, code_formule_gestion, description_long, 
-                        date_service, version_formule_1, version_formule_2, ref_1, ref_2))
-                    header_id = curr.fetchone()[0]
-                    heder_id = i
-                    while int(heder[c].split('|')[1]) != 15:
-                        c += 1
-                    while c < len(heder) and int(heder[c].split('|')[1]) != 16:
-                        comp = get_data_index(heder[c].split('|'), 2)
-                        cogestion = get_data_index(heder[c].split('|'), 3)
-                        cousine = get_data_index(heder[c].split('|'), 4)
-                        codage = get_data_codage(heder[c], 5)
-                        num_order = get_data_index(heder[c].split('|'), 6)
-                        libmp = get_data_index(heder[c].split('|'), 7)
-                        pct = get_data_index(heder[c].split('|'), 8)
-                        create_footer_table(curr, conn)
-                        curr.execute("""
-                        INSERT INTO table_data (
-                        header_id, heder_code, comp, cogestion, cousine, codage, 
-                        num_order, libmp, pct
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
-                        """, (header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct))
-                        c += 1
-                    conn.commit()
-                    move_file_to = os.path.join(ok_path, os.path.basename(current_working_file))
-                    if os.path.isfile(current_working_file):
-                        shutil.move(current_working_file, move_file_to)
-                    i += 1
-                    c = 0
-                number_of_files += 1
-                curr.close()
-                conn.close()
+                    INSERT INTO table_data (
+                    header_id, heder_code, comp, cogestion, cousine, codage, 
+                    num_order, libmp, pct
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+                    """, (header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct))
+                    c += 1
+                conn.commit()
+                move_file_to = os.path.join(ok_path, os.path.basename(current_working_file))
+                if os.path.isfile(current_working_file):
+                    shutil.move(current_working_file, move_file_to)
+                i += 1
+                c = 0
+            number_of_files += 1
+            curr.close()
+            conn.close()
         time.sleep(interval * 60)
 
 def button_command(count_down):
@@ -276,28 +282,85 @@ def button_command(count_down):
     except ValueError:
         messagebox.showerror("Error", "Invalid input. Please enter a valid integer.")
 
+def open_folder_dialog_ok():
+    default_path = 'OK/'
+    selected_folder = filedialog.askdirectory(title="Select a OK folder", initialdir=default_path)
+    if selected_folder:
+        ok_path = selected_folder
+        path_label.configure(text=f"Folder selected: {selected_folder}")
+def open_folder_dialog_ko():
+    default_path = 'KO/'
+    selected_folder = filedialog.askdirectory(title="Select a OK folder", initialdir=default_path)
+    if selected_folder:
+        ko_path = select_file
+        path_label.configure(text=f"Folder selected: {selected_folder}")
+
 
 def main():
     global output_directory
+    global ok_path
+    global ko_path
     output_directory = 'output_files/'
-    root = tk.Tk()
-    root.geometry("800x500")
-    root.title("CCS Power Parsing")
-    root.configure(bg='#aaccb8')
+    ok_path = "OK/"
+    ko_path = "KO/"
+    if not os.path.exists(ok_path):
+        os.makedirs(ok_path)
+    if not os.path.exists(ko_path):
+        os.makedirs(ko_path)
+    app = ctk.CTk()
+    app.geometry("800x500")
+    app.title("CCS Power Parsing")
+    app.configure(bg='#aaccb8')
+    app.wm_iconbitmap("app_icon/ccs_power_no_pOF_icon.ico")
 
-    count_down = tk.Entry(root, width = 100)
-    count_down.pack()
+    db_status_frame = ctk.CTkFrame(app)
+    db_status_frame.pack(fill="x", pady=10, padx=10)
+    db_status_label = ctk.CTkLabel(db_status_frame, text="Checking database connection...")
+    db_status_label.pack(pady = 5)
 
-    tk.Button(root, text="Enter time between each search", command=lambda: button_command(count_down)).pack()
+    db_thread = threading.Thread(target=update_db_status, args=(db_status_label,), daemon=True)
+    db_thread.start()
 
+    frame_ok_container = ctk.CTkFrame(app)
+    frame_ok_container.pack(fill="x", pady=10, padx=10)
 
-    label_font = tkfont.Font(family='Helvetica', size=12, weight='bold')
-    button_font = tkfont.Font(family='Helvetica', size=12)
+    frame_ok = ctk.CTkFrame(frame_ok_container)
+    frame_ok.pack(fill="x", padx=5, pady=5, ipady=5, ipadx=5)
+    frame_ok.configure(bg_color="white")
 
-    exit_button = tk.Button(root, text="Exit", command=root.quit, font=button_font)
+    path_label_ok = ctk.CTkLabel(frame_ok, text="Crrent path is : OK/  ")
+    path_label_ok.pack(side="left")
+
+    browse_button_ok = ctk.CTkButton(frame_ok, text="Change Folders for OK", command=open_folder_dialog_ok)
+    browse_button_ok.pack(side="left", padx=5)
+
+    frame_ko_container = ctk.CTkFrame(app)
+    frame_ko_container.pack(fill="x", pady=10, padx=10)
+
+    frame_ko = ctk.CTkFrame(frame_ko_container)
+    frame_ko.pack(fill="x", padx=5, pady=5, ipady=5, ipadx=5)
+    frame_ok.configure(bg_color="white")
+
+    path_label_ko = ctk.CTkLabel(frame_ko, text="Crrent path is : KO/  ")
+    path_label_ko.pack(side="left")
+
+    browse_button_ko = ctk.CTkButton(frame_ko, text="Change Folders for KO", command=open_folder_dialog_ko)
+    browse_button_ko.pack(side="left", padx=5)
+
+    count_down_container = ctk.CTkFrame(app)
+    count_down_container.pack(fill="x", pady=10, padx=10)
+
+    count_down_frame = ctk.CTkFrame(count_down_container)
+    count_down_frame.pack(fill="x", padx=5, pady=5, ipady=5, ipadx=5)
+    count_down_frame.configure(bg_color="white")
+
+    count_down = ctk.CTkEntry(count_down_frame, width=400)
+    count_down.pack(side="left", padx=2)
+    ctk.CTkButton(count_down_frame, text="Enter time between each search", command=lambda: button_command(count_down)).pack(fill="x", padx=2, pady=2, ipady=2, ipadx=2)
+
+    exit_button = ctk.CTkButton(app, text="Exit", command=app.quit)
     exit_button.pack(pady=(10, 20), ipadx=10, ipady=5)
-
-    root.mainloop()
+    app.mainloop()
 
 if __name__ == "__main__":
     main()

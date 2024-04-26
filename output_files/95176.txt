@@ -1,0 +1,62 @@
+95176          |01|95176
+95176          |02|GB
+95176          |03|BROILER FINISHER RS (29 - 38 days) TRIAL
+95176          |04|MEADERS
+95176          |05|
+95176          |06|95176
+95176          |07|BROILER FINISHER RS (29 - 38 days) TRIAL
+95176          |08|
+95176          |29|
+95176          |09|PLT
+95176          |28|Poultry
+95176          |10|MEADERS
+95176          |11|18/04/2024 09:43:53
+95176          |12|     37472
+95176          |13|     23503
+95176          |19|
+95176          |21|MEADERS
+95176          |31|100
+95176          |22|100
+95176          |23|Christian
+95176          |30|FEED
+95176          |34|0
+95176          |36|0
+95176          |39|3
+95176          |40|CRUMBLE
+95176          |40|TECHNA
+95176          |40|VTL
+95176          |67|christianp
+95176          |68|Christian
+95176          |27|COMP           |COGESTION      |COUSINE        |CODOSAGE       |NUMORDRE  |LIBMP                                             |PCT     
+95176          |14| 18
+95176          |15|1004           |1004           |MEADERS        |1              |0         |MAIZE MV DALARNA                                  | 68.9100
+95176          |15|1500           |1500           |MEADERS        |               |0         |WHEAT BRAN PELLETS                                |  1.0000
+95176          |15|2102           |2102           |MEADERS        |               |0         |SOYABEAN MEAL 48 HI PRO DALARNA                   | 26.0000
+95176          |15|4001           |4001           |MEADERS        |3              |0         |BLENDED OIL  UNIVERSAL                            |  1.5000
+95176          |15|4103           |4103           |MEADERS        |               |0         |LYSOFORTE PLUS                                    |  0.0500
+95176          |15|4300           |4300           |MEADERS        |               |0         |L LYSINE HCl                                      |  0.2100
+95176          |15|4320           |4320           |MEADERS        |               |0         |DL METHIONINE                                     |  0.2700
+95176          |15|4340           |4340           |MEADERS        |               |0         |L THREONINE                                       |  0.0900
+95176          |15|4362           |4362           |MEADERS        |               |0         |L VALINE                                          |  0.0100
+95176          |15|4407           |4407           |MEADERS        |2              |0         |BETAINE HCl 98% PMX 50%                           |  0.1250
+95176          |15|4439           |4439           |MEADERS        |               |0         |B ACT +                                           |  0.1000
+95176          |15|5000           |5000           |MEADERS        |2              |0         |LIMESTONE FT                                      |  1.0000
+95176          |15|5100           |5100           |MEADERS        |2              |0         |SALT [SI]                                         |  0.2300
+95176          |15|5105           |5105           |MEADERS        |2              |0         |SODIUM BICARBONATE                                |  0.1600
+95176          |15|6001           |6001           |MEADERS        |               |0         |PX BR GWR/FIN 0.2%                                |  0.2000
+95176          |15|6250           |6250           |MEADERS        |2              |0         |SALINOMYCIN 12% / SACOX 120                       |  0.0600
+95176          |15|6658           |6658           |MEADERS        |               |0         |ENDOX 20 EQF DRY                                  |  0.0100
+95176          |15|6661           |6661           |MEADERS        |               |0         |ESCENT                                            |  0.0750
+95176          |16| 12
+95176          |17|DCADP          |DCAD POULTRY                  |mEQ/100g|    22.219
+95176          |17|PELLET         |PELLETING FACTOR              |FACTOR  |     4.446
+95176          |17|%MAIZE 1       |% MAIZE MV DOUBLE DIAMOND     |PERCENT |    68.910
+95176          |17|%MAIZE 2       |% MAIZE MV DALARNA            |PERCENT |    68.910
+95176          |17|%LIQUID        |% LIQUID                      |PERCENT |     1.500
+95176          |17|% SOYA 46      |% SOYA 46                     |PERCENT |    26.000
+95176          |17|T000020        |EM PONTE                      |kcal    |  2939.245
+95176          |17|T000610        |VAL                           |%       |     0.844
+95176          |17|T000620        |HIS                           |%       |     0.474
+95176          |17|T000650        |DRP His                       |%       |     0.428
+95176          |17|T000700        |DRV Arg                       |%       |     1.075
+95176          |17|T000810        |DRV Val                       |%       |     0.752
