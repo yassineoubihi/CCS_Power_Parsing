@@ -34,7 +34,7 @@ def update_db_status(label):
             label.configure(text="Database ON", text_color='green')
         else:
             label.configure(text="Database OFF", text_color='red')
-        time.sleep(60)  # Update every 60 seconds
+        time.sleep(15)
 
 def read_lines(input_path):
     i = 0
@@ -194,6 +194,7 @@ def create_footer_table(cursor, conn):
     conn.commit()
 
 def recurring_task(interval):
+    return 0
     conn = psycopg2.connect(host = "localhost", dbname="postgres",user="postgres",password="root",port=5432)
     curr = conn.cursor()
 
@@ -326,33 +327,33 @@ def main():
 
     frame_ok = ctk.CTkFrame(frame_ok_container)
     frame_ok.pack(fill="x", padx=5, pady=5, ipady=5, ipadx=5)
-    frame_ok.configure(bg_color="white")
+    frame_ok.configure()
 
     path_label_ok = ctk.CTkLabel(frame_ok, text="Crrent path is : OK/  ")
     path_label_ok.pack(side="left")
 
     browse_button_ok = ctk.CTkButton(frame_ok, text="Change Folders for OK", command=open_folder_dialog_ok)
-    browse_button_ok.pack(side="left", padx=5)
+    browse_button_ok.pack(side="left", padx=10)
 
     frame_ko_container = ctk.CTkFrame(app)
     frame_ko_container.pack(fill="x", pady=10, padx=10)
 
     frame_ko = ctk.CTkFrame(frame_ko_container)
     frame_ko.pack(fill="x", padx=5, pady=5, ipady=5, ipadx=5)
-    frame_ok.configure(bg_color="white")
+    frame_ok.configure()
 
     path_label_ko = ctk.CTkLabel(frame_ko, text="Crrent path is : KO/  ")
     path_label_ko.pack(side="left")
 
     browse_button_ko = ctk.CTkButton(frame_ko, text="Change Folders for KO", command=open_folder_dialog_ko)
-    browse_button_ko.pack(side="left", padx=5)
+    browse_button_ko.pack(side="left", padx=10)
 
     count_down_container = ctk.CTkFrame(app)
     count_down_container.pack(fill="x", pady=10, padx=10)
 
     count_down_frame = ctk.CTkFrame(count_down_container)
     count_down_frame.pack(fill="x", padx=5, pady=5, ipady=5, ipadx=5)
-    count_down_frame.configure(bg_color="white")
+    count_down_frame.configure()
 
     count_down = ctk.CTkEntry(count_down_frame, width=400)
     count_down.pack(side="left", padx=2)
