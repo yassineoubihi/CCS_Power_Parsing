@@ -13,7 +13,7 @@ import ssl
 import smtplib
 import customtkinter as ctk
 from tkinter import filedialog
-
+from datetime import datetime
 
 global input_path
 input_path = None
@@ -27,6 +27,13 @@ def check_db_connection():
             conn.close()
             return True
         except psycopg2.OperationalError:
+            if not os.path.exists('connection_fails'):
+                os.makedirs(directory_path, exist_ok=True)
+                connectin_fails_msg
+                try:
+                    with open(file_path, 'x') as f:
+                        connectin_fails_msg ="\n" + "Connection Fails at : " + now.strftime("%Y-%m-%d %H:%M:%S")
+                        f.write(connectin_fails_msg)
             return False
     else:
         return True
