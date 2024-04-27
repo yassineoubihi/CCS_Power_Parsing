@@ -19,14 +19,17 @@ global input_path
 input_path = None
 
 def check_db_connection():
-    try:
-        conn = psycopg2.connect(host="localhost", dbname="postgres", user="postgres", password="root", port=5432)
-        cursor = conn.cursor()
-        cursor.execute("SELECT 1")
-        conn.close()
+    if connect_check != True:
+        try:
+            conn = psycopg2.connect(host="localhost", dbname="postgres", user="postgres", password="root", port=5432)
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            conn.close()
+            return True
+        except psycopg2.OperationalError:
+            return False
+    else:
         return True
-    except psycopg2.OperationalError:
-        return False
 
 def update_db_status(label):
     while True:
@@ -194,20 +197,24 @@ def create_footer_table(cursor, conn):
     conn.commit()
 
 def recurring_task(interval):
-    return 0
+    connect_check = True
     conn = psycopg2.connect(host = "localhost", dbname="postgres",user="postgres",password="root",port=5432)
     curr = conn.cursor()
 
     while True:
         os.makedirs(output_directory, exist_ok=True)
-        directory = 'inputs/'
-        files = os.listdir(directory)
+        if directory == 'inputs/':
+            new_directory = 'inputs/'
+        else:
+            new_directory = directory + '/'
+        files = os.listdir(new_directory)
+        print(directory)
         file_handles = {}
         number_of_files = 0
         while number_of_files < len(files):
             file_name = files[number_of_files]
-            current_working_file = "inputs/" + file_name
-            with open("inputs/" + file_name, 'r') as input_file:
+            current_working_file = new_directory + file_name
+            with open(new_directory + file_name, 'r') as input_file:
                 for line in input_file:
                     number = line.split()[0]
                     if number not in file_handles:
@@ -268,6 +275,7 @@ def recurring_task(interval):
             number_of_files += 1
             curr.close()
             conn.close()
+            connect_check = False
         time.sleep(interval * 60)
 
 def button_command(count_down):
@@ -296,11 +304,18 @@ def open_folder_dialog_ko():
         ko_path = select_file
         path_label.configure(text=f"Folder selected: {selected_folder}")
 
+def open_folder_dialog_directory():
+    global directory
+    default_path = 'inputs/'
+    selected_folder = filedialog.askdirectory(title="Select an Input Directory folder", initialdir=default_path)
+    if selected_folder:
+        directory = selected_folder  # Update the global variable
+        path_label_directory.configure(text=f"Folder selected: {directory}")
 
 def main():
-    global output_directory
-    global ok_path
-    global ko_path
+    global output_directory, ok_path, ko_path, directory, connect_check
+    connect_check = False
+    directory = 'inputs/'
     output_directory = 'output_files/'
     ok_path = "OK/"
     ko_path = "KO/"
@@ -322,6 +337,18 @@ def main():
     db_thread = threading.Thread(target=update_db_status, args=(db_status_label,), daemon=True)
     db_thread.start()
 
+    frame_directory_container = ctk.CTkFrame(app)
+    frame_directory_container.pack(fill="x", pady=10, padx=10)
+
+    frame_directory = ctk.CTkFrame(frame_directory_container)
+    frame_directory.pack(fill="x", padx=5, pady=5, ipady=5, ipadx=5)
+    frame_directory.configure()
+    global path_label_directory
+    path_label_directory = ctk.CTkLabel(frame_directory, text=f"Current path is: {directory}")
+    path_label_directory.pack(side="left")
+    browse_button_directory = ctk.CTkButton(frame_directory, text="Change Input Directory", command=open_folder_dialog_directory)
+    browse_button_directory.pack(side="left", padx=10)
+
     frame_ok_container = ctk.CTkFrame(app)
     frame_ok_container.pack(fill="x", pady=10, padx=10)
 
@@ -329,7 +356,7 @@ def main():
     frame_ok.pack(fill="x", padx=5, pady=5, ipady=5, ipadx=5)
     frame_ok.configure()
 
-    path_label_ok = ctk.CTkLabel(frame_ok, text="Crrent path is : OK/  ")
+    path_label_ok = ctk.CTkLabel(frame_ok, text="Crrent path is : /  ")
     path_label_ok.pack(side="left")
 
     browse_button_ok = ctk.CTkButton(frame_ok, text="Change Folders for OK", command=open_folder_dialog_ok)
