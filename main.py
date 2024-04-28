@@ -18,8 +18,6 @@ from datetime import datetime
 from PIL import Image, ImageTk
 import csv
 import io
-import dropbox
-import dropbox.files
 
 
 global input_path
@@ -343,11 +341,8 @@ def download_files(dbx):
 def main():
     global output_directory, ok_path, ko_path, directory, connect_check, interval
     connect_check = False
-    Token = "sl.B0KSKUeyvnnY8sUSV_1zSiZzPFcnxp-0br_DHHCeQh9CvkV_yNkyE4z0uNQMV7b5APpUXX2yi-Ra32p95NHXKaIdy2Sc8srFCdutlpKyw-C3EO88juNZ3nrVoPwz3MPL8dDEtvar9X-D"
-    dbx = dropbox.Dropbox(Token)
     if not os.path.exists('background'):
                 os.mkdir('background')
-    download_files(dbx)
     
     directory = 'inputs/'
     output_directory = 'output_files/'
