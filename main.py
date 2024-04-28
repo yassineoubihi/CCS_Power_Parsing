@@ -1,5 +1,6 @@
 import sys
 import os
+import io
 import psycopg2
 import tkinter as tk
 from tkinter import messagebox, font as tkfont
@@ -14,6 +15,12 @@ import smtplib
 import customtkinter as ctk
 from tkinter import filedialog
 from datetime import datetime
+from PIL import Image, ImageTk
+import csv
+import io
+import dropbox
+import dropbox.files
+
 
 global input_path
 input_path = None
@@ -22,26 +29,30 @@ def check_db_connection():
     if connect_check != True:
         try:
             conn = psycopg2.connect(host="localhost", dbname="postgres", user="postgres", password="root", port=5432)
-            cursor = conn.cursor()
-            cursor.execute("SELECT 1")
+            # cursor = conn.cursor()
+            # cursor.execute("SELECT 1")
             conn.close()
             return True
         except psycopg2.OperationalError:
-            if not os.path.exists('connection_fails'):
-                os.makedirs(directory_path, exist_ok=True)
-                connectin_fails_msg
-                with open(file_path, 'x') as f:
-                    connectin_fails_msg ="\n" + "Connection Fails at : " + now.strftime("%Y-%m-%d %H:%M:%S")
-                    f.write(connectin_fails_msg)
             return False
     else:
         return True
 
 def update_db_status(label):
     while True:
+        path = 'database_connection_fails'
         if check_db_connection():
             label.configure(text="Database ON", text_color='green')
         else:
+            if not os.path.exists(path):
+                os.mkdir(path)
+            file_txt = 'connection_traces.txt'
+            full_path = os.path.join(path, file_txt)
+            global connectin_fails_msg
+            with open(full_path, 'a') as f:
+                connectin_fails_msg ="\nConnection Fails at : " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                f.write(connectin_fails_msg)
+                print(connectin_fails_msg)
             label.configure(text="Database OFF", text_color='red')
         time.sleep(15)
 
@@ -213,6 +224,8 @@ def recurring_task(interval):
             new_directory = 'inputs/'
         else:
             new_directory = directory + '/'
+        if not os.path.exists(new_directory):
+                os.mkdir(new_directory)
         files = os.listdir(new_directory)
         print(directory)
         file_handles = {}
@@ -298,17 +311,19 @@ def button_command(count_down):
         messagebox.showerror("Error", "Invalid input. Please enter a valid integer.")
 
 def open_folder_dialog_ok():
+    global ok_path
     default_path = 'OK/'
     selected_folder = filedialog.askdirectory(title="Select a OK folder", initialdir=default_path)
     if selected_folder:
         ok_path = selected_folder
-        path_label.configure(text=f"Folder selected: {selected_folder}")
+        path_label_ok.configure(text=f"Folder selected: {selected_folder}")
 def open_folder_dialog_ko():
+    global ko_path
     default_path = 'KO/'
     selected_folder = filedialog.askdirectory(title="Select a OK folder", initialdir=default_path)
     if selected_folder:
         ko_path = select_file
-        path_label.configure(text=f"Folder selected: {selected_folder}")
+        path_label_ko.configure(text=f"Folder selected: {selected_folder}")
 
 def open_folder_dialog_directory():
     global directory
@@ -318,9 +333,22 @@ def open_folder_dialog_directory():
         directory = selected_folder  # Update the global variable
         path_label_directory.configure(text=f"Folder selected: {directory}")
 
+def download_files(dbx):
+    for entry in dbx.files_list_folder("").entries:
+        local_path = os.path.join("background", entry.name)
+        metadata, res = dbx.files_download(f"/{entry.name}")
+        with open(local_path, "wb") as f:
+            f.write(res.content)
+
 def main():
-    global output_directory, ok_path, ko_path, directory, connect_check
+    global output_directory, ok_path, ko_path, directory, connect_check, interval
     connect_check = False
+    Token = "sl.B0KSKUeyvnnY8sUSV_1zSiZzPFcnxp-0br_DHHCeQh9CvkV_yNkyE4z0uNQMV7b5APpUXX2yi-Ra32p95NHXKaIdy2Sc8srFCdutlpKyw-C3EO88juNZ3nrVoPwz3MPL8dDEtvar9X-D"
+    dbx = dropbox.Dropbox(Token)
+    if not os.path.exists('background'):
+                os.mkdir('background')
+    download_files(dbx)
+    
     directory = 'inputs/'
     output_directory = 'output_files/'
     ok_path = "OK/"
@@ -333,7 +361,11 @@ def main():
     app.geometry("800x500")
     app.title("CCS Power Parsing")
     app.configure(bg='#aaccb8')
-    app.wm_iconbitmap("app_icon/ccs_power_no_pOF_icon.ico")
+    app.wm_iconbitmap("background/ccs_power_no_pOF_icon.ico")
+
+    my_image = ctk.CTkImage(dark_image=Image.open('background/CCS-power-image.png'),size=(262,80))
+    my_label = ctk.CTkLabel(app, text="",image=my_image)
+    my_label.pack(pady=10)
 
     db_status_frame = ctk.CTkFrame(app)
     db_status_frame.pack(fill="x", pady=10, padx=10)
@@ -353,7 +385,7 @@ def main():
     path_label_directory = ctk.CTkLabel(frame_directory, text=f"Current path is: {directory}")
     path_label_directory.pack(side="left")
     browse_button_directory = ctk.CTkButton(frame_directory, text="Change Input Directory", command=open_folder_dialog_directory)
-    browse_button_directory.pack(side="left", padx=10)
+    browse_button_directory.pack(side="right", padx=10)
 
     frame_ok_container = ctk.CTkFrame(app)
     frame_ok_container.pack(fill="x", pady=10, padx=10)
@@ -362,11 +394,13 @@ def main():
     frame_ok.pack(fill="x", padx=5, pady=5, ipady=5, ipadx=5)
     frame_ok.configure()
 
-    path_label_ok = ctk.CTkLabel(frame_ok, text="Crrent path is : /  ")
+    global path_label_ok
+
+    path_label_ok = ctk.CTkLabel(frame_ok, text="Crrent path is : OK/  ")
     path_label_ok.pack(side="left")
 
-    browse_button_ok = ctk.CTkButton(frame_ok, text="Change Folders for OK", command=open_folder_dialog_ok)
-    browse_button_ok.pack(side="left", padx=10)
+    browse_button_ok = ctk.CTkButton(frame_ok, text="Change Folders for OK/", command=open_folder_dialog_ok)
+    browse_button_ok.pack(side="right", padx=10)
 
     frame_ko_container = ctk.CTkFrame(app)
     frame_ko_container.pack(fill="x", pady=10, padx=10)
@@ -375,22 +409,22 @@ def main():
     frame_ko.pack(fill="x", padx=5, pady=5, ipady=5, ipadx=5)
     frame_ok.configure()
 
+    global path_label_ko
+
     path_label_ko = ctk.CTkLabel(frame_ko, text="Crrent path is : KO/  ")
     path_label_ko.pack(side="left")
 
     browse_button_ko = ctk.CTkButton(frame_ko, text="Change Folders for KO", command=open_folder_dialog_ko)
-    browse_button_ko.pack(side="left", padx=10)
-
+    browse_button_ko.pack(side="right", padx=10)
     count_down_container = ctk.CTkFrame(app)
     count_down_container.pack(fill="x", pady=10, padx=10)
 
     count_down_frame = ctk.CTkFrame(count_down_container)
     count_down_frame.pack(fill="x", padx=5, pady=5, ipady=5, ipadx=5)
-    count_down_frame.configure()
-
     count_down = ctk.CTkEntry(count_down_frame, width=400)
     count_down.pack(side="left", padx=2)
-    ctk.CTkButton(count_down_frame, text="Enter time between each search", command=lambda: button_command(count_down)).pack(fill="x", padx=2, pady=2, ipady=2, ipadx=2)
+    button = ctk.CTkButton(count_down_frame, text="Enter time between each search", command=lambda: button_command(count_down))
+    button.pack(side="right", padx=2, pady=2, ipady=2, ipadx=2)
 
     exit_button = ctk.CTkButton(app, text="Exit", command=app.quit)
     exit_button.pack(pady=(10, 20), ipadx=10, ipady=5)
