@@ -27,8 +27,6 @@ def check_db_connection():
     if connect_check != True:
         try:
             conn = psycopg2.connect(host="localhost", dbname="postgres", user="postgres", password="root", port=5432)
-            # cursor = conn.cursor()
-            # cursor.execute("SELECT 1")
             conn.close()
             return True
         except psycopg2.OperationalError:
@@ -69,9 +67,9 @@ def read_lines(input_path):
                 split_line = line.split('|')
                 i += 1
     except FileNotFoundError:
-        print(f"The file at {input_path} could not be found.")
+        pass
     except Exception as e:
-        print(f"Error: {e}")
+        pass
     return heder
 
 def check_syntax(data):
@@ -225,7 +223,6 @@ def recurring_task(interval):
         if not os.path.exists(new_directory):
                 os.mkdir(new_directory)
         files = os.listdir(new_directory)
-        print(directory)
         file_handles = {}
         number_of_files = 0
         while number_of_files < len(files):
@@ -243,6 +240,7 @@ def recurring_task(interval):
             i = 0
             while i < len(file_names):
                 file_names[i] = output_directory + file_names[i]
+                print(file_name)
                 heder = read_lines(file_names[i])
                 heder_code = get_heder_code(heder, 1,current_working_file,ko_path)
                 la_long = get_str(heder, 2)
@@ -285,14 +283,14 @@ def recurring_task(interval):
                     c += 1
                 conn.commit()
                 move_file_to = os.path.join(ok_path, os.path.basename(current_working_file))
-                if os.path.isfile(current_working_file):
-                    shutil.move(current_working_file, move_file_to)
                 i += 1
                 c = 0
+            if os.path.isfile(new_directory + file_name):
+                shutil.move(new_directory + file_name, move_file_to)
             number_of_files += 1
-            curr.close()
-            conn.close()
-            connect_check = False
+        curr.close()
+        conn.close()
+        connect_check = False
         time.sleep(interval * 60)
 
 def button_command(count_down):
@@ -314,13 +312,23 @@ def open_folder_dialog_ok():
     selected_folder = filedialog.askdirectory(title="Select a OK folder", initialdir=default_path)
     if selected_folder:
         ok_path = selected_folder
+        with open('file.conf', 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+        lines[2] = ok_path + "\n"
+        with open('file.conf', 'w', encoding='utf-8') as file:
+            file.writelines(lines)
         path_label_ok.configure(text=f"Folder selected: {selected_folder}")
 def open_folder_dialog_ko():
     global ko_path
     default_path = 'KO/'
     selected_folder = filedialog.askdirectory(title="Select a OK folder", initialdir=default_path)
     if selected_folder:
-        ko_path = select_file
+        ko_path = selected_folder
+        with open('file.conf', 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+        lines[3] = ko_path + "\n"
+        with open('file.conf', 'w', encoding='utf-8') as file:
+            file.writelines(lines)
         path_label_ko.configure(text=f"Folder selected: {selected_folder}")
 
 def open_folder_dialog_directory():
@@ -328,7 +336,12 @@ def open_folder_dialog_directory():
     default_path = 'inputs/'
     selected_folder = filedialog.askdirectory(title="Select an Input Directory folder", initialdir=default_path)
     if selected_folder:
-        directory = selected_folder  # Update the global variable
+        directory = selected_folder
+        with open('file.conf', 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+        lines[0] = directory + "\n"
+        with open('file.conf', 'w', encoding='utf-8') as file:
+            file.writelines(lines)
         path_label_directory.configure(text=f"Folder selected: {directory}")
 
 def download_files(dbx):
@@ -343,11 +356,25 @@ def main():
     connect_check = False
     if not os.path.exists('background'):
                 os.mkdir('background')
-    
-    directory = 'inputs/'
-    output_directory = 'output_files/'
-    ok_path = "OK/"
-    ko_path = "KO/"
+    if not os.path.exists('file.conf'):
+        with open('file.conf', 'x') as file:
+            file.write('inputs/\n')
+            file.write('output_files/\n')
+            file.write('OK/\n')
+            file.write('KO/\n')
+    with open('file.conf', 'r') as file:
+        line = file.readline()
+        directory = line.strip()
+        line = file.readline()
+        output_directory = line.strip()
+        line = file.readline()
+        ok_path = line.strip()
+        line = file.readline()
+        ko_path = line.strip()
+    print(ok_path)
+    print(ko_path)
+    if not os.path.exists(ok_path):
+        os.makedirs(directory)
     if not os.path.exists(ok_path):
         os.makedirs(ok_path)
     if not os.path.exists(ko_path):
@@ -391,10 +418,10 @@ def main():
 
     global path_label_ok
 
-    path_label_ok = ctk.CTkLabel(frame_ok, text="Crrent path is : OK/  ")
+    path_label_ok = ctk.CTkLabel(frame_ok, text=f"Current path is: {ok_path}")
     path_label_ok.pack(side="left")
 
-    browse_button_ok = ctk.CTkButton(frame_ok, text="Change Folders for OK/", command=open_folder_dialog_ok)
+    browse_button_ok = ctk.CTkButton(frame_ok, text="Change Folders for OK path", command=open_folder_dialog_ok)
     browse_button_ok.pack(side="right", padx=10)
 
     frame_ko_container = ctk.CTkFrame(app)
@@ -406,10 +433,10 @@ def main():
 
     global path_label_ko
 
-    path_label_ko = ctk.CTkLabel(frame_ko, text="Crrent path is : KO/  ")
+    path_label_ko = ctk.CTkLabel(frame_ko, text=f"Current path is: {ko_path}")
     path_label_ko.pack(side="left")
 
-    browse_button_ko = ctk.CTkButton(frame_ko, text="Change Folders for KO", command=open_folder_dialog_ko)
+    browse_button_ko = ctk.CTkButton(frame_ko, text="Change Folders for KO path", command=open_folder_dialog_ko)
     browse_button_ko.pack(side="right", padx=10)
     count_down_container = ctk.CTkFrame(app)
     count_down_container.pack(fill="x", pady=10, padx=10)
