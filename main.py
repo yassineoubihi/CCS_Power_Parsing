@@ -93,7 +93,7 @@ def get_heder_code(heder, num, current_working_file, ko_path):
                 shutil.move(current_working_file, move_file_to)
             messagebox.showinfo("Syntax Error !" ,"Syntax Error expected '|' in file : " + current_working_file)
             email_sender = 'youbihi129@gmail.com'
-            email_password = "falk seer ivkx eolv"
+            email_password = "hhhhhhhhhhhhh"
 
             email_receiver = 'youbihi741@gmail.com'
             msg_subject = 'Syntax Error !'
