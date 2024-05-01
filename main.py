@@ -1,3 +1,6 @@
+"""
+Modules provide utils for the main parser
+"""
 import sys
 import os
 import io
