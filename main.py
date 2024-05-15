@@ -18,8 +18,8 @@ import smtplib
 import customtkinter as ctk
 from tkinter import filedialog
 from datetime import datetime
-from PIL import Image, ImageTk
-import csv
+from PIL import Image
+import ipaddress
 import io
 
 
@@ -29,7 +29,7 @@ input_path = None
 def check_db_connection():
     if connect_check != True:
         try:
-            conn = psycopg2.connect(host="localhost", dbname="postgres", user="postgres", password="root", port=5432)
+            conn = psycopg2.connect(host = dbhost, dbname= databasename,user= databasename,password="root",port=5432)
             conn.close()
             return True
         except psycopg2.OperationalError:
@@ -214,10 +214,11 @@ def create_footer_table(cursor, conn):
 
 def recurring_task(interval):
     connect_check = True
-    conn = psycopg2.connect(host = "localhost", dbname="postgres",user="postgres",password="root",port=5432)
+    conn = psycopg2.connect(host = dbhost, dbname= databasename,user= databasename,password="root",port=5432)
     curr = conn.cursor()
 
     while True:
+        output_directory = 'output_files/'
         os.makedirs(output_directory, exist_ok=True)
         if directory == 'inputs/':
             new_directory = 'inputs/'
@@ -243,7 +244,6 @@ def recurring_task(interval):
             i = 0
             while i < len(file_names):
                 file_names[i] = output_directory + file_names[i]
-                print(file_name)
                 heder = read_lines(file_names[i])
                 heder_code = get_heder_code(heder, 1,current_working_file,ko_path)
                 la_long = get_str(heder, 2)
@@ -279,7 +279,7 @@ def recurring_task(interval):
                     create_footer_table(curr, conn)
                     curr.execute("""
                     INSERT INTO table_data (
-                    header_id, heder_code, comp, cogestion, cousine, codage, 
+                    header_id, heder_code, comp, cogestion, cousine, codage,
                     num_order, libmp, pct
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
                     """, (header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct))
@@ -294,20 +294,53 @@ def recurring_task(interval):
         curr.close()
         conn.close()
         connect_check = False
-        time.sleep(interval * 60)
+        time.sleep(interval)
 
 def button_command(count_down):
     text = count_down.get()
-    try:
-        interval = int(text)
-        if interval <= 0:
-            messagebox.showerror("Error", "Please enter a positive integer for minutes.")
+    conn = psycopg2.connect(host = dbhost, dbname= databasename,user= databasename,password="root",port=5432)
+    curr = conn.cursor()
+    curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'INTERVAL'")
+    result = curr.fetchone()
+
+    if not text:
+        if result:
+            interval_time = int(result[0])
         else:
-            thread = threading.Thread(target=recurring_task, args=(interval,), daemon=True)
-            thread.start()
-            messagebox.showinfo("Success", f"Task scheduled every {interval} minutes.")
-    except ValueError:
-        messagebox.showerror("Error", "Invalid input. Please enter a valid integer.")
+            curr.execute("""
+                INSERT INTO formimp (
+                id, s_code, s_descrip, s_valparam, d_creat, d_modif, s_usercreat, s_usermodif
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+                """, (1, "INTERVAL", "Interval between each search", "30", datetime.now(), datetime.now(), "user", "user"))
+            interval_time = 30
+        count_down.delete(0, "end")
+        count_down.insert(0, str(interval_time))
+    else:
+        try:
+            interval_time = int(text)
+            if interval_time <= 0:
+                messagebox.showerror("Error", "Please enter a positive integer for minutes.")
+                return
+            else:
+                if result:
+                    curr.execute("UPDATE formimp SET s_valparam = %s WHERE s_code = 'INTERVAL';", (str(interval_time),))
+                else:
+                    curr.execute("""
+                    INSERT INTO formimp (
+                    id, s_code, s_descrip, s_valparam, d_creat, d_modif, s_usercreat, s_usermodif
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+                    """, (1, "INTERVAL", "Interval between each search", str(interval_time), datetime.now(), datetime.now(), "user", "user"))
+        except ValueError:
+            messagebox.showerror("Error", "Invalid input. Please enter a valid integer.")
+            return
+
+    thread = threading.Thread(target=recurring_task, args=(interval_time,), daemon=True)
+    thread.start()
+    messagebox.showinfo("Success", f"Task scheduled every {interval_time} minutes.")
+
+    conn.commit()
+    curr.close()
+    conn.close()
 
 def open_folder_dialog_ok():
     global ok_path
@@ -315,11 +348,12 @@ def open_folder_dialog_ok():
     selected_folder = filedialog.askdirectory(title="Select a OK folder", initialdir=default_path)
     if selected_folder:
         ok_path = selected_folder
-        with open('file.conf', 'r', encoding='utf-8') as file:
-            lines = file.readlines()
-        lines[2] = ok_path + "\n"
-        with open('file.conf', 'w', encoding='utf-8') as file:
-            file.writelines(lines)
+        conn = psycopg2.connect(host=dbhost, dbname=databasename, user=databasename, password="root", port=5432)
+        curr = conn.cursor()
+        curr.execute("UPDATE formimp SET s_valparam = %s WHERE s_code = 'DOSFORMOK';", (selected_folder,))
+        conn.commit()
+        curr.close()
+        conn.close()
         path_label_ok.configure(text=f"Folder selected: {selected_folder}")
 def open_folder_dialog_ko():
     global ko_path
@@ -327,11 +361,12 @@ def open_folder_dialog_ko():
     selected_folder = filedialog.askdirectory(title="Select a OK folder", initialdir=default_path)
     if selected_folder:
         ko_path = selected_folder
-        with open('file.conf', 'r', encoding='utf-8') as file:
-            lines = file.readlines()
-        lines[3] = ko_path + "\n"
-        with open('file.conf', 'w', encoding='utf-8') as file:
-            file.writelines(lines)
+        conn = psycopg2.connect(host=dbhost, dbname=databasename, user=databasename, password="root", port=5432)
+        curr = conn.cursor()
+        curr.execute("UPDATE formimp SET s_valparam = %s WHERE s_code = 'DOSFORMKO';", (selected_folder,))
+        conn.commit()
+        curr.close()
+        conn.close()
         path_label_ko.configure(text=f"Folder selected: {selected_folder}")
 
 def open_folder_dialog_directory():
@@ -340,11 +375,12 @@ def open_folder_dialog_directory():
     selected_folder = filedialog.askdirectory(title="Select an Input Directory folder", initialdir=default_path)
     if selected_folder:
         directory = selected_folder
-        with open('file.conf', 'r', encoding='utf-8') as file:
-            lines = file.readlines()
-        lines[0] = directory + "\n"
-        with open('file.conf', 'w', encoding='utf-8') as file:
-            file.writelines(lines)
+        conn = psycopg2.connect(host=dbhost, dbname=databasename, user=databasename, password="root", port=5432)
+        curr = conn.cursor()
+        curr.execute("UPDATE formimp SET s_valparam = %s WHERE s_code = 'DOSFORM';", (selected_folder,))
+        conn.commit()
+        curr.close()
+        conn.close()
         path_label_directory.configure(text=f"Folder selected: {directory}")
 
 def download_files(dbx):
@@ -355,7 +391,7 @@ def download_files(dbx):
             f.write(res.content)
 
 def main():
-    global output_directory, ok_path, ko_path, directory, connect_check, interval
+    global output_directory, ok_path, ko_path, directory, connect_check, dbhost, databasename, dosform, fichform, dosformok, dosformko
     connect_check = False
     if not os.path.exists('background'):
                 os.mkdir('background')
@@ -367,16 +403,68 @@ def main():
             file.write('KO/\n')
     with open('file.conf', 'r') as file:
         line = file.readline()
-        directory = line.strip()
-        line = file.readline()
-        output_directory = line.strip()
-        line = file.readline()
-        ok_path = line.strip()
-        line = file.readline()
-        ko_path = line.strip()
-    print(ok_path)
-    print(ko_path)
-    if not os.path.exists(ok_path):
+        print(line)
+        for line in file:
+            if line.split(" ")[0] == "HOST":
+                dbhost = ipaddress.ip_address(line.split(" ")[2].strip())
+                break
+        while line.split(" ")[0] != "DBNAME":
+            line = file.readline()
+        databasename = line.split(" ")[2].replace("\n", "")
+        conn = psycopg2.connect(host = dbhost, dbname= databasename,user= databasename,password="root",port=5432)
+        curr = conn.cursor()
+        curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'DOSFORM'")
+        result = curr.fetchone()
+        if result:
+            
+            directory = result[0]
+            print(directory)
+        else:
+            directory = "C:/inputs"
+            curr.execute("""
+                    INSERT INTO formimp (
+                    id, s_code, s_descrip, s_valparam, d_creat, d_modif, s_usercreat,s_usermodif
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+                    """, (1, "DOSFORM", "inputs files path", "C:/testform", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "user", "user"))
+        curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'FICHFORM'")
+        result = curr.fetchone()
+        if result:
+            pass
+        else:
+            curr.execute("""
+                    INSERT INTO formimp (
+                    id, s_code, s_descrip, s_valparam, d_creat, d_modif, s_usercreat,
+                    s_usermodif
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+                    """, (1, "FICHFORM", "txt file name", "formule.txt", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "user", "user"))
+        curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'DOSFORMOK'")
+        result = curr.fetchone()
+        if result:
+            ok_path = result[0]
+        else:
+            ok_path = "C:/testform/ok"
+            curr.execute("""
+                    INSERT INTO formimp (
+                    id, s_code, s_descrip, s_valparam, d_creat, d_modif, s_usercreat,
+                    s_usermodif
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+                    """, (1, "DOSFORMOK", "OK files path", "C:/testform/ok", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "user", "user"))
+        curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'DOSFORMKO'")
+        result = curr.fetchone()
+        if result:
+            ko_path = result[0]
+        else:
+            ko_path = "C:/testform/ko"
+            curr.execute("""
+                    INSERT INTO formimp (
+                    id, s_code, s_descrip, s_valparam, d_creat, d_modif, s_usercreat,
+                    s_usermodif
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+                    """, (1, "DOSFORMKO", "KO files path", "C:/testform/ko", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "user", "user"))
+        conn.commit()
+        curr.close()
+        conn.close()
+    if not os.path.exists(directory):
         os.makedirs(directory)
     if not os.path.exists(ok_path):
         os.makedirs(ok_path)
