@@ -189,7 +189,8 @@ def create_header_table(cursor, conn):
             version_formule_1 INT NOT NULL,
             version_formule_2 INT NOT NULL,
             ref_1 INT NOT NULL,
-            ref_2 INT NOT NULL
+            ref_2 INT NOT NULL,
+            state VARCHAR(2)
         );
     """)
     conn.commit()
@@ -284,6 +285,9 @@ def recurring_task(interval):
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
                     """, (header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct))
                     c += 1
+                curr.execute("""
+                    UPDATE header SET state = 'OK' WHERE id = %s;
+                    """, (header_id,))
                 conn.commit()
                 move_file_to = os.path.join(ok_path, os.path.basename(current_working_file))
                 i += 1
