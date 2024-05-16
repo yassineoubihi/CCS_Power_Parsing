@@ -228,6 +228,7 @@ def recurring_task(interval):
         if not os.path.exists(new_directory):
                 os.mkdir(new_directory)
         files = os.listdir(new_directory)
+        files = [file for file in files if file.endswith('.txt')]
         file_handles = {}
         number_of_files = 0
         while number_of_files < len(files):
@@ -340,8 +341,7 @@ def button_command(count_down):
 
     thread = threading.Thread(target=recurring_task, args=(interval_time,), daemon=True)
     thread.start()
-    messagebox.showinfo("Success", f"Task scheduled every {interval_time} minutes.")
-
+    messagebox.showinfo("Success", f"Task scheduled every {interval_time} sec.")
     conn.commit()
     curr.close()
     conn.close()
@@ -407,7 +407,6 @@ def main():
             file.write('KO/\n')
     with open('file.conf', 'r') as file:
         line = file.readline()
-        print(line)
         for line in file:
             if line.split(" ")[0] == "HOST":
                 dbhost = ipaddress.ip_address(line.split(" ")[2].strip())
@@ -420,9 +419,7 @@ def main():
         curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'DOSFORM'")
         result = curr.fetchone()
         if result:
-            
             directory = result[0]
-            print(directory)
         else:
             directory = "C:/inputs"
             curr.execute("""
