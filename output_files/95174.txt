@@ -1,6 +1,6 @@
 95174          |01|95174
 95174          |02|GB
-95174          |03BROILER STARTER RS (9 - 18 days) TRIAL
+95174          |03|BROILER STARTER RS (9 - 18 days) TRIAL
 95174          |04|MEADERS
 95174          |05|
 95174          |06|95174

@@ -21,6 +21,7 @@ from datetime import datetime
 from PIL import Image
 import ipaddress
 import io
+import glob
 
 
 global input_path
@@ -51,7 +52,6 @@ def update_db_status(label):
             with open(full_path, 'a') as f:
                 connectin_fails_msg ="\nConnection Fails at : " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 f.write(connectin_fails_msg)
-                print(connectin_fails_msg)
             label.configure(text="Database OFF", text_color='red')
         time.sleep(15)
 
@@ -87,47 +87,19 @@ def check_syntax(data):
     else:
         return 1
 
-def get_heder_code(heder, num, current_working_file, ko_path):
-    i = 0
-    while i < len(heder):
-        if check_syntax(heder[i]) == 1:
-            move_file_to = os.path.join(ko_path, os.path.basename(current_working_file))
-            if os.path.isfile(current_working_file):
-                shutil.move(current_working_file, move_file_to)
-            messagebox.showinfo("Syntax Error !" ,"Syntax Error expected '|' in file : " + current_working_file)
-            email_sender = 'youbihi129@gmail.com'
-            email_password = "hhhhhhhhhhhhh"
-
-            email_receiver = 'youbihi741@gmail.com'
-            msg_subject = 'Syntax Error !'
-            body = "Syntax Error expected '|' in file : " + current_working_file
-
-            em = EmailMessage()
-            em['From'] = email_sender
-            em['To'] = email_receiver
-            em['subject'] = msg_subject
-            em.set_content(body)
-
-            context = ssl.create_default_context()
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465, context = context) as smtp:
-                smtp.login(email_sender, email_password)
-                smtp.sendmail(email_sender, email_receiver, em.as_string())
-            sys.exit(1)
-        line = heder[i].split('|')
-        if int(line[1]) == num:
-            return line[2].strip()
-        i += 1
+def get_heder_code(current_working_file, num, start):
+    while start < len(current_working_file):
+        if int(current_working_file[start].split('|')[1]) == num:
+            return current_working_file[start].split('|')[2].strip()
+        start += 1
     return -1
 
-def get_str(heder, num):
-    i = 0
-    while i < len(heder):
-        if check_syntax(heder[i]) == 1:
-            print("Syntax Error expected '|'")
-        line = heder[i].split('|')
+def get_str(heder, num, start):
+    while start < len(heder):
+        line = heder[start].split('|')
         if int(line[1]) == num:
             return line[2].strip()
-        i += 1
+        start += 1
     return "Null"
 
 def get_first_elem(file_content):
@@ -177,7 +149,7 @@ def get_data_codage(header, index):
     else:
         return header.split('|')[index].strip()
 
-def create_header_table(cursor, conn):
+def create_header_table(cursor):
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS header (
             id SERIAL PRIMARY KEY,
@@ -189,11 +161,9 @@ def create_header_table(cursor, conn):
             version_formule_1 INT NOT NULL,
             version_formule_2 INT NOT NULL,
             ref_1 INT NOT NULL,
-            ref_2 INT NOT NULL,
-            state VARCHAR(2)
+            ref_2 INT NOT NULL
         );
     """)
-    conn.commit()
 
 def create_footer_table(cursor, conn):
     cursor.execute("""
@@ -213,91 +183,152 @@ def create_footer_table(cursor, conn):
     """)
     conn.commit()
 
+def check_current_working_file(current_working_file,start,decode):
+    if decode == "COMP":
+        decode_num = 2
+    elif decode == "COGESTION":
+        decode_num = 3
+    elif decode == "COUSINE":
+        decode_num = 4
+    while start < len(current_working_file) and int(current_working_file[start].split('|')[1]) == 16:
+        print(current_working_file[start])
+        if not current_working_file[start].split('|')[decode_num].strip():
+            return 1
+        start += 1
+    return 0
+
+def fill_tables(header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct, curr, conn):
+    i = 0
+    while i < len(comp):
+        create_footer_table(curr, conn)
+        curr.execute("""
+        INSERT INTO table_data (
+        header_id, heder_code, comp, cogestion, cousine, codage,
+        num_order, libmp, pct
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+        """, (header_id, heder_code, comp[i], cogestion[i], cousine[i], codage[i], num_order[i], libmp[i], pct[i]))
+        i += 1
+    conn.commit()
+    print("table filled !!!")
+
+def get_start(start, current_working_file, num):
+    while start < len(current_working_file) - 1 and int(current_working_file[start].split('|')[1]) != num:
+        start += 1
+    if int(current_working_file[start].split('|')[1]) == num:
+        return start
+    else :
+        return -1
+
 def recurring_task(interval):
+    flage = 0
+    comp = []
+    cogestion = []
+    cousine = []
+    codage = []
+    num_order = []
+    libmp = []
+    pct = []
+    num_of_files = 0
+    start = 0
+    index = 0
+    error = 0
+    file_move = 0
+    
     connect_check = True
     conn = psycopg2.connect(host = dbhost, dbname= databasename,user= databasename,password="root",port=5432)
     curr = conn.cursor()
 
     while True:
-        output_directory = 'output_files/'
-        os.makedirs(output_directory, exist_ok=True)
         if directory == 'inputs/':
             new_directory = 'inputs/'
         else:
             new_directory = directory + '/'
         if not os.path.exists(new_directory):
-                os.mkdir(new_directory)
-        files = os.listdir(new_directory)
-        files = [file for file in files if file.endswith('.txt')]
-        file_handles = {}
-        number_of_files = 0
-        while number_of_files < len(files):
-            file_name = files[number_of_files]
-            current_working_file = new_directory + file_name
-            with open(new_directory + file_name, 'r') as input_file:
-                for line in input_file:
-                    number = line.split()[0]
-                    if number not in file_handles:
-                        file_handles[number] = open(os.path.join(output_directory, f"{number}.txt"), 'w')
-                    file_handles[number].write(line)
-            for handle in file_handles.values():
-                handle.close()
-            file_names = [f for f in os.listdir(output_directory) if os.path.isfile(os.path.join(output_directory, f))]
-            i = 0
-            while i < len(file_names):
-                file_names[i] = output_directory + file_names[i]
-                heder = read_lines(file_names[i])
-                heder_code = get_heder_code(heder, 1,current_working_file,ko_path)
-                la_long = get_str(heder, 2)
-                description_court = get_str(heder, 3)
-                code_formule_gestion = get_heder_code(heder, 6, current_working_file,ko_path)
-                description_long = get_str(heder, 7)
-                date_service = get_str(heder, 11)
-                version_formule_1 = get_heder_code(heder, 12,current_working_file,ko_path)
-                version_formule_2 = get_heder_code(heder, 13,current_working_file,ko_path)
-                ref_1 = get_heder_code(heder, 31,current_working_file,ko_path)
-                ref_2 = get_heder_code(heder, 22,current_working_file,ko_path)
-                c = 0
+            os.mkdir(new_directory)
+        txt_files = os.listdir(new_directory)
+        txt_files = [file for file in txt_files if file.endswith('.txt')]
+        while num_of_files < len(txt_files):
+            curr_file = txt_files[num_of_files]
+            curr_file = new_directory + curr_file
+            with open(curr_file, 'r') as file:
+                current_working_file = file.readlines()
+            while (get_start(start, current_working_file, 1) != -1):
+                start = get_start(start, current_working_file, 1)
+                heder_code = get_heder_code(current_working_file,1, start)
+                start += 1
+                la_long = get_str(current_working_file, 2, start)
+                start += 1
+                description_court = get_str(current_working_file, 3, start)
+                start += 1
+                code_formule_gestion = get_heder_code(current_working_file,6, start)
+                start += 1
+                description_long = get_str(current_working_file, 7, start)
+                start += 1
+                date_service = get_str(current_working_file, 11, start)
+                start += 1
+                version_formule_1 = get_heder_code(current_working_file,12, start)
+                start += 1
+                version_formule_2 = get_heder_code(current_working_file,13, start)
+                start += 1
+                ref_1 = get_heder_code(current_working_file,31, start)
+                start += 1
+                ref_2 = get_heder_code(current_working_file,22, start)
+                start += 1
                 create_header_table(curr,conn)
-                curr.execute("""
-                    INSERT INTO header (
-                    la_long, description_court, code_formule_gestion, description_long,
-                    date_service, version_formule_1, version_formule_2, ref_1, ref_2
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
-                    """, (la_long, description_court, code_formule_gestion, description_long, 
-                    date_service, version_formule_1, version_formule_2, ref_1, ref_2))
-                header_id = curr.fetchone()[0]
-                heder_id = i
-                while int(heder[c].split('|')[1]) != 15:
-                    c += 1
-                while c < len(heder) and int(heder[c].split('|')[1]) != 16:
-                    comp = get_data_index(heder[c].split('|'), 2)
-                    cogestion = get_data_index(heder[c].split('|'), 3)
-                    cousine = get_data_index(heder[c].split('|'), 4)
-                    codage = get_data_codage(heder[c], 5)
-                    num_order = get_data_index(heder[c].split('|'), 6)
-                    libmp = get_data_index(heder[c].split('|'), 7)
-                    pct = get_data_index(heder[c].split('|'), 8)
-                    create_footer_table(curr, conn)
+                while int(current_working_file[start].split('|')[1]) == 15:
+                    start = get_start(start, current_working_file, 14)
+                    start += 1
+                    curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'Decode'")
+                    decode = curr.fetchone()
+                    if check_current_working_file(current_working_file, start,decode[0]) == 1:
+                        error = 1
+                        file_move = 1
+                        break
+                    comp.append (get_data_index(current_working_file[start].split('|'), 2))
+                    cogestion.append(get_data_index(current_working_file[start].split('|'), 3))
+                    cousine.append(get_data_index(current_working_file[start].split('|'), 4))
+                    codage.append(get_data_codage(current_working_file[start], 5))
+                    num_order.append(get_data_index(current_working_file[start].split('|'), 6))
+                    libmp.append(get_data_index(current_working_file[start].split('|'), 7))
+                    pct.append(get_data_index(current_working_file[start].split('|'), 8))
+                    start += 1
+                if error == 1 :
                     curr.execute("""
-                    INSERT INTO table_data (
-                    header_id, heder_code, comp, cogestion, cousine, codage,
-                    num_order, libmp, pct
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
-                    """, (header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct))
-                    c += 1
-                curr.execute("""
-                    UPDATE header SET state = 'OK' WHERE id = %s;
-                    """, (header_id,))
-                conn.commit()
-                move_file_to = os.path.join(ok_path, os.path.basename(current_working_file))
-                i += 1
-                c = 0
-            if os.path.isfile(new_directory + file_name):
-                shutil.move(new_directory + file_name, move_file_to)
-            number_of_files += 1
+                        INSERT INTO header (
+                        la_long, description_court, code_formule_gestion, description_long,
+                        date_service, version_formule_1, version_formule_2, ref_1, ref_2
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                        """, (la_long, description_court, code_formule_gestion, description_long, 
+                        date_service, version_formule_1, version_formule_2, ref_1, ref_2))
+                    conn.commit()
+                    print("error")
+                else :
+                    curr.execute("""
+                        INSERT INTO header (
+                        la_long, description_court, code_formule_gestion, description_long,
+                        date_service, version_formule_1, version_formule_2, ref_1, ref_2
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                        """, (la_long, description_court, code_formule_gestion, description_long, 
+                        date_service, version_formule_1, version_formule_2, ref_1, ref_2))
+                    header_id = curr.fetchone()[0]
+                    fill_tables(header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct, curr, conn)
+                    print("not error")
+            num_of_files += 1
+            comp.clear()
+            cogestion.clear()
+            cousine.clear()
+            codage.clear()
+            num_order.clear()
+            libmp.clear()
+            pct.clear()
         curr.close()
         conn.close()
+        if file_move == 1:
+            destination_path = os.path.join(ko_path, os.path.basename(curr_file))
+            shutil.move(curr_file, destination_path)
+        elif file_move != 1:
+            destination_path = os.path.join(ok_path, os.path.basename(curr_file))
+            shutil.move(curr_file, destination_path)
         connect_check = False
         time.sleep(interval)
 
@@ -399,12 +430,6 @@ def main():
     connect_check = False
     if not os.path.exists('background'):
                 os.mkdir('background')
-    if not os.path.exists('file.conf'):
-        with open('file.conf', 'x') as file:
-            file.write('inputs/\n')
-            file.write('output_files/\n')
-            file.write('OK/\n')
-            file.write('KO/\n')
     with open('file.conf', 'r') as file:
         line = file.readline()
         for line in file:
@@ -475,7 +500,7 @@ def main():
     app.geometry("800x500")
     app.title("CCS Power Parsing")
     app.configure(bg='#aaccb8')
-    app.wm_iconbitmap("background/ccs_power_no_pOF_icon.ico")
+    app.wm_iconbitmap("background/New_Project-removebg-preview.ico")
 
     my_image = ctk.CTkImage(dark_image=Image.open('background/CCS-power-image.png'),size=(262,80))
     my_label = ctk.CTkLabel(app, text="",image=my_image)

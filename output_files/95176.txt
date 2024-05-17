@@ -40,7 +40,7 @@
 95176          |15|4362           |4362           |MEADERS        |               |0         |L VALINE                                          |  0.0100
 95176          |15|4407           |4407           |MEADERS        |2              |0         |BETAINE HCl 98% PMX 50%                           |  0.1250
 95176          |15|4439           |4439           |MEADERS        |               |0         |B ACT +                                           |  0.1000
-95176          |15|5000           |5000           |MEADERS        |2              |0         |LIMESTONE FT                                      |  1.0000
+95176          |155000           |5000           |MEADERS        |2              |0         |LIMESTONE FT                                      |  1.0000
 95176          |15|5100           |5100           |MEADERS        |2              |0         |SALT [SI]                                         |  0.2300
 95176          |15|5105           |5105           |MEADERS        |2              |0         |SODIUM BICARBONATE                                |  0.1600
 95176          |15|6001           |6001           |MEADERS        |               |0         |PX BR GWR/FIN 0.2%                                |  0.2000
