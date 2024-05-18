@@ -149,7 +149,7 @@ def get_data_codage(header, index):
     else:
         return header.split('|')[index].strip()
 
-def create_header_table(cursor):
+def create_header_table(cursor, conn):
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS header (
             id SERIAL PRIMARY KEY,
@@ -164,6 +164,8 @@ def create_header_table(cursor):
             ref_2 INT NOT NULL
         );
     """)
+    conn.commit()
+
 
 def create_footer_table(cursor, conn):
     cursor.execute("""
@@ -190,8 +192,7 @@ def check_current_working_file(current_working_file,start,decode):
         decode_num = 3
     elif decode == "COUSINE":
         decode_num = 4
-    while start < len(current_working_file) and int(current_working_file[start].split('|')[1]) == 16:
-        print(current_working_file[start])
+    while start < len(current_working_file) and int(current_working_file[start].split('|')[1]) != 16:
         if not current_working_file[start].split('|')[decode_num].strip():
             return 1
         start += 1
@@ -208,8 +209,7 @@ def fill_tables(header_id, heder_code, comp, cogestion, cousine, codage, num_ord
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
         """, (header_id, heder_code, comp[i], cogestion[i], cousine[i], codage[i], num_order[i], libmp[i], pct[i]))
         i += 1
-    conn.commit()
-    print("table filled !!!")
+        conn.commit()
 
 def get_start(start, current_working_file, num):
     while start < len(current_working_file) - 1 and int(current_working_file[start].split('|')[1]) != num:
@@ -231,6 +231,7 @@ def recurring_task(interval):
     num_of_files = 0
     start = 0
     index = 0
+    header_id = 0
     error = 0
     file_move = 0
     
@@ -275,9 +276,9 @@ def recurring_task(interval):
                 ref_2 = get_heder_code(current_working_file,22, start)
                 start += 1
                 create_header_table(curr,conn)
+                start = get_start(start, current_working_file, 14)
+                start += 1
                 while int(current_working_file[start].split('|')[1]) == 15:
-                    start = get_start(start, current_working_file, 14)
-                    start += 1
                     curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'Decode'")
                     decode = curr.fetchone()
                     if check_current_working_file(current_working_file, start,decode[0]) == 1:
@@ -292,27 +293,28 @@ def recurring_task(interval):
                     libmp.append(get_data_index(current_working_file[start].split('|'), 7))
                     pct.append(get_data_index(current_working_file[start].split('|'), 8))
                     start += 1
-                if error == 1 :
+                if error != 1 :
+                    print("data inserted !!!! ")
                     curr.execute("""
-                        INSERT INTO header (
-                        la_long, description_court, code_formule_gestion, description_long,
-                        date_service, version_formule_1, version_formule_2, ref_1, ref_2
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
-                        """, (la_long, description_court, code_formule_gestion, description_long, 
-                        date_service, version_formule_1, version_formule_2, ref_1, ref_2))
+                            INSERT INTO header (
+                            la_long, description_court, code_formule_gestion, description_long,
+                            date_service, version_formule_1, version_formule_2, ref_1, ref_2
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                            """, (la_long, description_court, code_formule_gestion, description_long, 
+                            date_service, version_formule_1, version_formule_2, ref_1, ref_2))
+                    header_id = curr.fetchone()[0]
                     conn.commit()
-                    print("error")
+                    fill_tables(header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct, curr, conn)
                 else :
                     curr.execute("""
-                        INSERT INTO header (
-                        la_long, description_court, code_formule_gestion, description_long,
-                        date_service, version_formule_1, version_formule_2, ref_1, ref_2
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
-                        """, (la_long, description_court, code_formule_gestion, description_long, 
-                        date_service, version_formule_1, version_formule_2, ref_1, ref_2))
-                    header_id = curr.fetchone()[0]
-                    fill_tables(header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct, curr, conn)
-                    print("not error")
+                            INSERT INTO header (
+                            la_long, description_court, code_formule_gestion, description_long,
+                            date_service, version_formule_1, version_formule_2, ref_1, ref_2
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                            """, (la_long, description_court, code_formule_gestion, description_long, 
+                            date_service, version_formule_1, version_formule_2, ref_1, ref_2))
+                    conn.commit()
+                error = 0
             num_of_files += 1
             comp.clear()
             cogestion.clear()
@@ -321,14 +323,15 @@ def recurring_task(interval):
             num_order.clear()
             libmp.clear()
             pct.clear()
+            
+            if file_move == 1:
+                destination_path = os.path.join(ko_path, os.path.basename(curr_file))
+                shutil.move(curr_file, destination_path)
+            elif file_move != 1:
+                destination_path = os.path.join(ok_path, os.path.basename(curr_file))
+                shutil.move(curr_file, destination_path)
         curr.close()
         conn.close()
-        if file_move == 1:
-            destination_path = os.path.join(ko_path, os.path.basename(curr_file))
-            shutil.move(curr_file, destination_path)
-        elif file_move != 1:
-            destination_path = os.path.join(ok_path, os.path.basename(curr_file))
-            shutil.move(curr_file, destination_path)
         connect_check = False
         time.sleep(interval)
 
