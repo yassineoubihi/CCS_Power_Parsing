@@ -321,11 +321,13 @@ def recurring_task(interval):
                     formule_name = os.path.basename(curr_file)
                     formule_name = formule_name.replace(".txt", "")
                     comment_str = formule_name + " produit numero " + str(heder_code) + " a été traitée"
+                    date = datetime.now()
+                    date = date.strftime("%Y-%m-%d %H:%M")
                     curr.execute("""
                                  INSERT INTO FORMIMP(
                                      header_id, D_INS, S_COMMENT, C_ETAT
                                  ) VALUES (%s, %s, %s, %s);
-                                 """, (header_id, datetime.now(), comment_str, "A"))
+                                 """, (header_id, date, comment_str, "A"))
                     conn.commit()
                     fill_tables(header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct, curr, conn)
                 else :
@@ -338,12 +340,14 @@ def recurring_task(interval):
                             date_service, version_formule_1, version_formule_2, ref_1, ref_2))
                     formule_name = os.path.basename(curr_file)
                     formule_name = formule_name.replace(".txt", "")
+                    date = datetime.now()
+                    date = date.strftime("%Y-%m-%d %H:%M")
                     comment_str = formule_name + " produit numero " + str(heder_code) + " a été traitée"
                     curr.execute("""
                                  INSERT INTO FORMIMP(
                                      header_id, D_INS, S_COMMENT, C_ETAT
                                  ) VALUES (%s, %s, %s, %s);
-                                 """, (header_id, datetime.now(), comment_str, "F"))
+                                 """, (header_id, date, comment_str, "F"))
                     conn.commit()
                 error = 0
             num_of_files += 1
