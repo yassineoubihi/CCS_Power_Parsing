@@ -318,6 +318,14 @@ def recurring_task(interval):
                             """, (la_long, description_court, code_formule_gestion, description_long, 
                             date_service, version_formule_1, version_formule_2, ref_1, ref_2))
                     header_id = curr.fetchone()[0]
+                    formule_name = os.path.basename(curr_file)
+                    formule_name = formule_name.replace(".txt", "")
+                    comment_str = formule_name + " produit numero " + str(heder_code) + " a été traitée"
+                    curr.execute("""
+                                 INSERT INTO FORMIMP(
+                                     header_id, D_INS, S_COMMENT, C_ETAT
+                                 ) VALUES (%s, %s, %s, %s);
+                                 """, (header_id, datetime.now(), comment_str, "A"))
                     conn.commit()
                     fill_tables(header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct, curr, conn)
                 else :
@@ -328,6 +336,14 @@ def recurring_task(interval):
                             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
                             """, (la_long, description_court, code_formule_gestion, description_long, 
                             date_service, version_formule_1, version_formule_2, ref_1, ref_2))
+                    formule_name = os.path.basename(curr_file)
+                    formule_name = formule_name.replace(".txt", "")
+                    comment_str = formule_name + " produit numero " + str(heder_code) + " a été traitée"
+                    curr.execute("""
+                                 INSERT INTO FORMIMP(
+                                     header_id, D_INS, S_COMMENT, C_ETAT
+                                 ) VALUES (%s, %s, %s, %s);
+                                 """, (header_id, datetime.now(), comment_str, "F"))
                     conn.commit()
                 error = 0
             num_of_files += 1
