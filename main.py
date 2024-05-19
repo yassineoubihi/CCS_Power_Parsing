@@ -164,6 +164,21 @@ def create_header_table(cursor, conn):
             ref_2 INT NOT NULL
         );
     """)
+    
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS FORMIMP (
+                        id          SERIAL PRIMARY KEY,
+                        header_id   INTEGER NOT NULL,
+                        D_INS       VARCHAR(255),
+                        S_COMMENT   VARCHAR(255),
+                        C_ETAT      VARCHAR(1)
+                    );
+    """)
+    cursor.execute("COMMENT ON COLUMN FORMIMP.id IS 'Identifiant trace';")
+    cursor.execute("COMMENT ON COLUMN FORMIMP.header_id IS 'Identifiant header';")
+    cursor.execute("COMMENT ON COLUMN FORMIMP.D_INS IS 'Date insertion';")
+    cursor.execute("COMMENT ON COLUMN FORMIMP.S_COMMENT IS 'Commentaire';")
+    cursor.execute("COMMENT ON COLUMN FORMIMP.C_ETAT IS 'Etat de l''échange';")
     conn.commit()
 
 
@@ -279,7 +294,7 @@ def recurring_task(interval):
                 start = get_start(start, current_working_file, 14)
                 start += 1
                 while int(current_working_file[start].split('|')[1]) == 15:
-                    curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'Decode'")
+                    curr.execute("SELECT s_valparam FROM config WHERE s_code = 'Decode'")
                     decode = curr.fetchone()
                     if check_current_working_file(current_working_file, start,decode[0]) == 1:
                         error = 1
@@ -339,7 +354,7 @@ def button_command(count_down):
     text = count_down.get()
     conn = psycopg2.connect(host = dbhost, dbname= databasename,user= databasename,password="root",port=5432)
     curr = conn.cursor()
-    curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'INTERVAL'")
+    curr.execute("SELECT s_valparam FROM config WHERE s_code = 'INTERVAL'")
     result = curr.fetchone()
 
     if not text:
@@ -347,7 +362,7 @@ def button_command(count_down):
             interval_time = int(result[0])
         else:
             curr.execute("""
-                INSERT INTO formimp (
+                INSERT INTO config (
                 id, s_code, s_descrip, s_valparam, d_creat, d_modif, s_usercreat, s_usermodif
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
                 """, (1, "INTERVAL", "Interval between each search", "30", datetime.now(), datetime.now(), "user", "user"))
@@ -362,10 +377,10 @@ def button_command(count_down):
                 return
             else:
                 if result:
-                    curr.execute("UPDATE formimp SET s_valparam = %s WHERE s_code = 'INTERVAL';", (str(interval_time),))
+                    curr.execute("UPDATE config SET s_valparam = %s WHERE s_code = 'INTERVAL';", (str(interval_time),))
                 else:
                     curr.execute("""
-                    INSERT INTO formimp (
+                    INSERT INTO config (
                     id, s_code, s_descrip, s_valparam, d_creat, d_modif, s_usercreat, s_usermodif
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
                     """, (1, "INTERVAL", "Interval between each search", str(interval_time), datetime.now(), datetime.now(), "user", "user"))
@@ -388,7 +403,7 @@ def open_folder_dialog_ok():
         ok_path = selected_folder
         conn = psycopg2.connect(host=dbhost, dbname=databasename, user=databasename, password="root", port=5432)
         curr = conn.cursor()
-        curr.execute("UPDATE formimp SET s_valparam = %s WHERE s_code = 'DOSFORMOK';", (selected_folder,))
+        curr.execute("UPDATE config SET s_valparam = %s WHERE s_code = 'DOSFORMOK';", (selected_folder,))
         conn.commit()
         curr.close()
         conn.close()
@@ -401,7 +416,7 @@ def open_folder_dialog_ko():
         ko_path = selected_folder
         conn = psycopg2.connect(host=dbhost, dbname=databasename, user=databasename, password="root", port=5432)
         curr = conn.cursor()
-        curr.execute("UPDATE formimp SET s_valparam = %s WHERE s_code = 'DOSFORMKO';", (selected_folder,))
+        curr.execute("UPDATE config SET s_valparam = %s WHERE s_code = 'DOSFORMKO';", (selected_folder,))
         conn.commit()
         curr.close()
         conn.close()
@@ -415,7 +430,7 @@ def open_folder_dialog_directory():
         directory = selected_folder
         conn = psycopg2.connect(host=dbhost, dbname=databasename, user=databasename, password="root", port=5432)
         curr = conn.cursor()
-        curr.execute("UPDATE formimp SET s_valparam = %s WHERE s_code = 'DOSFORM';", (selected_folder,))
+        curr.execute("UPDATE config SET s_valparam = %s WHERE s_code = 'DOSFORM';", (selected_folder,))
         conn.commit()
         curr.close()
         conn.close()
@@ -444,48 +459,48 @@ def main():
         databasename = line.split(" ")[2].replace("\n", "")
         conn = psycopg2.connect(host = dbhost, dbname= databasename,user= databasename,password="root",port=5432)
         curr = conn.cursor()
-        curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'DOSFORM'")
+        curr.execute("SELECT s_valparam FROM config WHERE s_code = 'DOSFORM'")
         result = curr.fetchone()
         if result:
             directory = result[0]
         else:
             directory = "C:/inputs"
             curr.execute("""
-                    INSERT INTO formimp (
+                    INSERT INTO config (
                     id, s_code, s_descrip, s_valparam, d_creat, d_modif, s_usercreat,s_usermodif
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
                     """, (1, "DOSFORM", "inputs files path", "C:/testform", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "user", "user"))
-        curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'FICHFORM'")
+        curr.execute("SELECT s_valparam FROM config WHERE s_code = 'FICHFORM'")
         result = curr.fetchone()
         if result:
             pass
         else:
             curr.execute("""
-                    INSERT INTO formimp (
+                    INSERT INTO config (
                     id, s_code, s_descrip, s_valparam, d_creat, d_modif, s_usercreat,
                     s_usermodif
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
                     """, (1, "FICHFORM", "txt file name", "formule.txt", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "user", "user"))
-        curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'DOSFORMOK'")
+        curr.execute("SELECT s_valparam FROM config WHERE s_code = 'DOSFORMOK'")
         result = curr.fetchone()
         if result:
             ok_path = result[0]
         else:
             ok_path = "C:/testform/ok"
             curr.execute("""
-                    INSERT INTO formimp (
+                    INSERT INTO config (
                     id, s_code, s_descrip, s_valparam, d_creat, d_modif, s_usercreat,
                     s_usermodif
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
                     """, (1, "DOSFORMOK", "OK files path", "C:/testform/ok", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "user", "user"))
-        curr.execute("SELECT s_valparam FROM formimp WHERE s_code = 'DOSFORMKO'")
+        curr.execute("SELECT s_valparam FROM config WHERE s_code = 'DOSFORMKO'")
         result = curr.fetchone()
         if result:
             ko_path = result[0]
         else:
             ko_path = "C:/testform/ko"
             curr.execute("""
-                    INSERT INTO formimp (
+                    INSERT INTO config (
                     id, s_code, s_descrip, s_valparam, d_creat, d_modif, s_usercreat,
                     s_usermodif
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
