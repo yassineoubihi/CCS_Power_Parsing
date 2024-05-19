@@ -179,7 +179,6 @@ def create_header_table(cursor, conn):
     cursor.execute("COMMENT ON COLUMN FORMIMP.D_INS IS 'Date insertion';")
     cursor.execute("COMMENT ON COLUMN FORMIMP.S_COMMENT IS 'Commentaire';")
     cursor.execute("COMMENT ON COLUMN FORMIMP.C_ETAT IS 'Etat de l''échange';")
-    conn.commit()
 
 
 def create_footer_table(cursor, conn):
@@ -224,7 +223,6 @@ def fill_tables(header_id, heder_code, comp, cogestion, cousine, codage, num_ord
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
         """, (header_id, heder_code, comp[i], cogestion[i], cousine[i], codage[i], num_order[i], libmp[i], pct[i]))
         i += 1
-        conn.commit()
 
 def get_start(start, current_working_file, num):
     while start < len(current_working_file) - 1 and int(current_working_file[start].split('|')[1]) != num:
@@ -328,7 +326,6 @@ def recurring_task(interval):
                                      header_id, D_INS, S_COMMENT, C_ETAT
                                  ) VALUES (%s, %s, %s, %s);
                                  """, (header_id, date, comment_str, "A"))
-                    conn.commit()
                     fill_tables(header_id, heder_code, comp, cogestion, cousine, codage, num_order, libmp, pct, curr, conn)
                 else :
                     curr.execute("""
@@ -348,7 +345,6 @@ def recurring_task(interval):
                                      header_id, D_INS, S_COMMENT, C_ETAT
                                  ) VALUES (%s, %s, %s, %s);
                                  """, (header_id, date, comment_str, "F"))
-                    conn.commit()
                 error = 0
             num_of_files += 1
             comp.clear()
@@ -365,6 +361,7 @@ def recurring_task(interval):
             elif file_move != 1:
                 destination_path = os.path.join(ok_path, os.path.basename(curr_file))
                 shutil.move(curr_file, destination_path)
+        conn.commit()
         curr.close()
         conn.close()
         connect_check = False
